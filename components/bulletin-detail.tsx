@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, Calendar, Clock, UsersIcon, Trash2 } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, UsersIcon, Trash2, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -22,12 +22,15 @@ const bulletinData: Record<string, any> = {
       { id: 1, name: "AI Hackathon 2025" },
       { id: 2, name: "Climate Change Research" },
     ],
-    isOwner: true, // Added flag to check if current user is the owner
+    authorID: "current-user-id", // Mock current user ID
   },
 }
 
 export function BulletinDetail({ id }: { id: string }) {
   const bulletin = bulletinData[id] || bulletinData["1"]
+
+  const currentUserID = "current-user-id" // Mock - should come from auth context
+  const isAuthor = bulletin.authorID === currentUserID
 
   const handleDelete = () => {
     /* TODO: plug backend */
@@ -43,11 +46,19 @@ export function BulletinDetail({ id }: { id: string }) {
             Back to Bulletins
           </Button>
         </Link>
-        {bulletin.isOwner && (
-          <Button variant="destructive" onClick={handleDelete} className="gap-2">
-            <Trash2 className="h-4 w-4" />
-            Delete Bulletin
-          </Button>
+        {isAuthor && (
+          <div className="flex gap-2">
+            <Link href={`/bulletin/edit/${id}`}>
+              <Button variant="outline" className="gap-2 bg-transparent">
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            </Link>
+            <Button variant="destructive" onClick={handleDelete} className="gap-2">
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Button>
+          </div>
         )}
       </div>
 

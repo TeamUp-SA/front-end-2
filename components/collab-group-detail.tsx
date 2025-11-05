@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, Calendar, Clock, UsersIcon, GraduationCap } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, UsersIcon, GraduationCap, Edit, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +17,7 @@ const groupData: Record<string, any> = {
     categoryColor: "bg-orange-500",
     date: "December 15, 2025",
     time: "9:00 AM - 6:00 PM",
+    ownerID: "current-user-id", // Mock owner ID
     members: [
       { id: 1, name: "Alice Johnson", avatar: "/diverse-woman-portrait.png", education: "MIT - Computer Science" },
       { id: 2, name: "Bob Smith", avatar: "/man.jpg", education: "Stanford - AI Research" },
@@ -32,11 +33,18 @@ export function CollabGroupDetail({ id }: { id: string }) {
 
   const isJoined = ["1", "2", "3"].includes(id)
 
+  const currentUserID = "current-user-id" // Mock - should come from auth context
+  const isOwner = group.ownerID === currentUserID
+
   const handleLeaveGroup = () => {
     /* TODO: plug backend */
   }
 
   const handleJoinGroup = () => {
+    /* TODO: plug backend */
+  }
+
+  const handleDelete = () => {
     /* TODO: plug backend */
   }
 
@@ -60,19 +68,39 @@ export function CollabGroupDetail({ id }: { id: string }) {
               {group.category}
             </Badge>
           </div>
-          {isJoined ? (
-            <Button size="lg" variant="destructive" onClick={handleLeaveGroup}>
-              Leave Group
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={handleJoinGroup}
-            >
-              Join Group
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {isOwner && (
+              <>
+                <Link href={`/collab-group/edit/${id}`}>
+                  <Button variant="outline" className="gap-2 bg-transparent">
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </Button>
+                </Link>
+                <Button variant="destructive" onClick={handleDelete} className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              </>
+            )}
+            {!isOwner && (
+              <>
+                {isJoined ? (
+                  <Button size="lg" variant="destructive" onClick={handleLeaveGroup}>
+                    Leave Group
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={handleJoinGroup}
+                  >
+                    Join Group
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Date and Time */}

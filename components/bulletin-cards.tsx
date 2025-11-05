@@ -10,12 +10,14 @@ import { useEffect, useState, useMemo } from "react";
 import { getBulletins } from "@/api/bulletin"
 import { Bulletin } from "@/types/bulletin";
 import { getTagColor, getTagName } from "@/utils/tagMap";
-
+import { useRouter } from "next/navigation";
 
 export function BulletinCards() {
   const [bulletins, setBulletins] = useState<Bulletin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter();
 
   const fetchBulletins = async () => {
       try {
@@ -40,7 +42,7 @@ export function BulletinCards() {
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   const handleCreateBulletin = () => {
-    /* TODO: plug backend */
+    router.push("/bulletin/create");
   }
 
   return (
