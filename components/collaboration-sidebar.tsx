@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const navigation = [
-  { name: "Collab Group", icon: FolderKanban, count: 24, href: "/" },
-  { name: "Bulletin", icon: Megaphone, count: 12, href: "/bulletin" },
-  { name: "My Collab Group", icon: Users, count: 8, href: "/my-teams" },
+  { name: "Collab Group", icon: FolderKanban,  href: "/" },
+  { name: "Bulletin", icon: Megaphone,  href: "/bulletin" },
+  { name: "My Collab Group", icon: Users,  href: "/my-teams" },
 ]
 
 export function CollaborationSidebar() {
@@ -68,7 +68,6 @@ export function CollaborationSidebar() {
                     <item.icon className="h-4 w-4" />
                     <span>{item.name}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{item.count}</span>
                 </Link>
               )
             })}

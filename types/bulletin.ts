@@ -6,7 +6,7 @@ export interface Bulletin {
   groupID: string[];
   date: string;
   image: string;
-  tags: string[];
+  tags: number[];
   createdAt?: string;
 }
 
@@ -17,7 +17,7 @@ export interface BulletinCreateRequest {
   groupID: string[];
   date: string;
   image: string;
-  tags: string[];
+  tags: number[];
 }
 
 export interface BulletinUpdateRequest {
@@ -26,5 +26,5 @@ export interface BulletinUpdateRequest {
   groupID: string[];
   date: string;
   image: string;
-  tags: string[];
+  tags: number[];
 }

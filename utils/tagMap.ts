@@ -15,10 +15,10 @@ export const tagColorMap: Record<string, string> = {
   "4": "bg-amber-500",
 };
 
-export function getTagName(tagId: string) {
+export function getTagName(tagId: number) {
   return tagNameMap[tagId] || "Unknown";
 }
 
-export function getTagColor(tagId: string) {
+export function getTagColor(tagId: number) {
   return tagColorMap[tagId] || "bg-gray-500";
 }
