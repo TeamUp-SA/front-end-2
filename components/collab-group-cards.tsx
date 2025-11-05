@@ -3,11 +3,12 @@
 import type React from "react"
 
 import Link from "next/link"
-import { MoreVertical, Calendar, UsersIcon } from "lucide-react"
+import { MoreVertical, Calendar, UsersIcon, Check } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useRouter } from "next/navigation"
 
 const groups = [
   {
@@ -23,6 +24,7 @@ const groups = [
     ],
     dueDate: "Dec 15, 2025",
     memberCount: 24,
+    isJoined: true, // Added isJoined flag
   },
   {
     id: 2,
@@ -37,6 +39,7 @@ const groups = [
     ],
     dueDate: "Jan 20, 2026",
     memberCount: 12,
+    isJoined: false,
   },
   {
     id: 3,
@@ -51,6 +54,7 @@ const groups = [
     ],
     dueDate: "Feb 1, 2026",
     memberCount: 18,
+    isJoined: true,
   },
   {
     id: 4,
@@ -64,6 +68,7 @@ const groups = [
     ],
     dueDate: "Dec 30, 2025",
     memberCount: 8,
+    isJoined: false,
   },
   {
     id: 5,
@@ -78,6 +83,7 @@ const groups = [
     ],
     dueDate: "Nov 28, 2025",
     memberCount: 45,
+    isJoined: false,
   },
   {
     id: 6,
@@ -92,12 +98,16 @@ const groups = [
     ],
     dueDate: "Mar 15, 2026",
     memberCount: 15,
+    isJoined: true,
   },
 ]
 
 export function CollabGroupCards() {
+  const router = useRouter()
+
   const handleCreateGroup = () => {
     /* TODO: plug backend */
+    router.push("/collab-group/create")
   }
 
   const handleJoinGroup = (e: React.MouseEvent, groupId: number) => {
@@ -175,12 +185,23 @@ export function CollabGroupCards() {
                   <span>Due {group.dueDate}</span>
                 </div>
 
-                <Button
-                  onClick={(e) => handleJoinGroup(e, group.id)}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  Join Group
-                </Button>
+                {group.isJoined ? (
+                  <Button
+                    variant="secondary"
+                    className="w-full bg-muted text-muted-foreground hover:bg-muted/80 cursor-default"
+                    disabled
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Joined
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={(e) => handleJoinGroup(e, group.id)}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Join Group
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </Link>

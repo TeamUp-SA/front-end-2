@@ -6,16 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { getBulletins } from "@/api/bulletin"
 import { Bulletin } from "@/types/bulletin";
 import { getTagColor, getTagName } from "@/utils/tagMap";
-
+import { useRouter } from "next/navigation";
 
 export function BulletinCards() {
   const [bulletins, setBulletins] = useState<Bulletin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter();
 
   const fetchBulletins = async () => {
       try {
@@ -23,6 +25,7 @@ export function BulletinCards() {
         setError(null);
 
         const res = await getBulletins();
+        // console.log("bulletins",res)
         setBulletins(res.data); 
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to fetch bulletins");
@@ -40,7 +43,7 @@ export function BulletinCards() {
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   const handleCreateBulletin = () => {
-    /* TODO: plug backend */
+    router.push("/bulletin/create");
   }
 
   return (
@@ -58,7 +61,10 @@ export function BulletinCards() {
 
       {/* Bulletin Cards Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {bulletins.map((bulletin) => (
+        {(!bulletins || bulletins.length === 0) ? (
+          <p className="py-10 text-muted-foreground">No bulletins available.</p>
+          ) : (
+          bulletins?.map((bulletin) => (
           <Link key={bulletin.bulletinID} href={`/bulletin/${bulletin.bulletinID}`}>
             <Card className="flex flex-col h-full hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer overflow-hidden">
               {/* Poster Image */}
@@ -105,7 +111,7 @@ export function BulletinCards() {
               </CardContent>
             </Card>
           </Link>
-        ))}
+        )))}
       </div>
     </div>
   )

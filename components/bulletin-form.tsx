@@ -1,0 +1,330 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { ArrowLeft, Plus, X, Upload } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Bulletin } from "@/types/bulletin"
+import { getBulletinById } from "@/api/bulletin"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { tagNameMap } from "@/utils/tagMap"
+import { Group } from "@/types/group"
+import { getGroups } from "@/api/group"
+import { updateBulletin, createBulletin } from "@/api/bulletin"
+
+// // Mock data for edit mode
+// const mockBulletinData: Record<string, any> = {
+//   "1": {
+//     title: "Tech Conference 2025",
+//     description:
+//       "Join us for the annual technology conference featuring the latest innovations in AI, blockchain, and cloud computing.",
+//     date: "2025-03-20",
+//     image: "/tech-conference-poster-banner.jpg",
+//     tags: ["Conference", "Technology", "AI"],
+//     groupIDs: ["1", "2"],
+//   },
+// }
+
+interface BulletinFormProps {
+  mode: "create" | "edit"
+  bulletinId?: string
+}
+
+export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
+  const router = useRouter()
+  const [bulletin, setBulletin] = useState<Bulletin | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [groups, setGroups] = useState<Group[]>([]);
+  
+  const fetchBulletin = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+
+          const res = await getBulletinById(bulletinId as string);
+          setBulletin(res.data); 
+        } catch (err: any) {
+          setError(err.response?.data?.message || "Failed to fetch bulletin");
+          console.log(err);
+        } finally {
+          setLoading(false);
+        }
+  };
+
+  const fetchGroups = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+
+          const res = await getGroups();
+          setGroups(res.data); 
+        } catch (err: any) {
+          setError(err.response?.data?.message || "Failed to fetch collab groups");
+          console.log(err);
+        } finally {
+          setLoading(false);
+        }
+  };
+
+  useEffect(() => {
+      fetchBulletin();
+      fetchGroups();
+  }, [bulletinId]); 
+
+  const existingData = mode === "edit" && bulletinId ? bulletin : null
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
+  const [image, setImage] = useState("");
+  const [tags, setTags] = useState<number[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [groupIDs, setGroupIDs] = useState<string[]>([]);
+  const [groupIDInput, setGroupIDInput] = useState("");
+
+  useEffect(() => {
+    if (bulletin && mode === "edit") {
+      setTitle(bulletin.title);
+      setDescription(bulletin.description);
+      setDate(bulletin.date);
+      setImage(bulletin.image);
+      setTags(bulletin.tags);
+      setGroupIDs(bulletin.groupID);
+    }
+  }, [bulletin, mode]); 
+
+  // Add tag by dropdown selection
+  const handleAddTag = (selectedTag: number) => {
+  if (!tags.includes(selectedTag)) {
+    setTags((prev) => [...prev, selectedTag])
+  }
+  }
+
+// Remove tag by clicking the X
+  const handleRemoveTag = (tagToRemove: number) => {
+    setTags((prev) => prev.filter((tag) => tag !== tagToRemove))
+  }
+
+
+   const handleAddGroup = (selectedGroup: string) => {
+  if (!groupIDs.includes(selectedGroup)) {
+    setGroupIDs((prev) => [...prev, selectedGroup])
+  }
+  }
+
+// Remove tag by clicking the X
+  const handleRemoveGroup = (groupToRemove: string) => {
+    setGroupIDs((prev) => prev.filter((group) => group !== groupToRemove))
+  }
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
+
+     const payload = {
+          title,
+          description,
+          groupID: groupIDs,
+          date,
+          image,
+          tags: [0],
+     };
+
+     try {
+     let response;
+
+     switch (mode) {
+          case "create":
+          response = await createBulletin({...payload, authorID: "507f1f77bcf86cd799999999"}); 
+          break;
+
+          case "edit":
+          if (!bulletinId) throw new Error("No bulletin ID for edit mode");
+          response = await updateBulletin(bulletinId, payload); 
+          break;
+
+          default:
+          throw new Error("Invalid mode");
+     }
+
+     console.log("Submission successful:", response);
+     router.push("/bulletin"); 
+
+     } catch (err: any) {
+     console.error("Failed to submit bulletin:", err.response?.data || err.message);
+     }
+};
+
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <Link href="/bulletin">
+          <Button variant="ghost" className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Bulletins
+          </Button>
+        </Link>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{mode === "create" ? "Create New Bulletin" : "Edit Bulletin"}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter bulletin title"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter bulletin description"
+                rows={5}
+                required
+              />
+            </div>
+
+            {/* Date */}
+            <div className="space-y-2">
+              <Label htmlFor="date">Date *</Label>
+              <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+            </div>
+
+            {/* Image URL */}
+            <div className="space-y-2">
+              <Label htmlFor="image">Poster Image URL *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="image"
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                  placeholder="Enter image URL or upload"
+                  required
+                />
+                <Button type="button" variant="outline" size="icon">
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </div>
+              {image && (
+                <div className="mt-2 relative w-full h-48 rounded-lg overflow-hidden bg-muted">
+                  <img src={image || "/placeholder.svg"} alt="Preview" className="object-cover w-full h-full" />
+                </div>
+              )}
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-2">
+               <Label htmlFor="tags">Tags</Label>
+               <div className="flex gap-2">
+               <Select onValueChange={(value) => handleAddTag(Number(value))}>
+                    <SelectTrigger className="w-[200px]" id="tags">
+                    <SelectValue placeholder="Select a tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {Object.entries(tagNameMap).map(([key, label]) => (
+                         <SelectItem key={key} value={key}>
+                         {label}
+                         </SelectItem>
+                    ))}
+                    </SelectContent>
+               </Select>
+               </div>
+
+               <div className="flex flex-wrap gap-2 mt-2">
+               {tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="gap-1">
+                    {tagNameMap[tag] ?? tag}
+                    <button
+                         type="button"
+                         onClick={() => handleRemoveTag(tag)}
+                         className="ml-1 hover:text-destructive"
+                    >
+                         <X className="h-3 w-3" />
+                    </button>
+                    </Badge>
+               ))}
+               </div>
+               </div>
+            
+
+            {/* Group IDs */}
+            <div className="space-y-2">
+               <Label htmlFor="tags">Collaboration group attached</Label>
+               <div className="flex gap-2">
+               <Select onValueChange={(value) => handleAddGroup(value)}>
+                    <SelectTrigger className="w-[200px]" id="tags">
+                    <SelectValue placeholder="Select a tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {groups?.map((group)=>(
+                         <SelectItem key={group.groupID} value={group.groupID}>
+                         {group.title}
+                         </SelectItem>
+                    ))}
+                    </SelectContent>
+               </Select>
+               </div>
+
+               <div className="flex flex-wrap gap-2 mt-2">
+               {groupIDs.map((id) => {
+                    const group = groups.find((g) => g.groupID === id); // find the matching group object
+                    return (
+                    <Badge key={id} variant="secondary" className="gap-1">
+                    {group ? group.title : "Unknown Group"}
+                    <button
+                         type="button"
+                         onClick={() => handleRemoveGroup(id)}
+                         className="ml-1 hover:text-destructive"
+                    >
+                         <X className="h-3 w-3" />
+                    </button>
+                    </Badge>
+               );
+               })}
+               </div>
+               </div>
+
+            {/* Submit Button */}
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1">
+                {mode === "create" ? "Create Bulletin" : "Save Changes"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.back()}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
