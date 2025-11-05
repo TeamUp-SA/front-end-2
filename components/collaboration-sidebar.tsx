@@ -11,7 +11,6 @@ const navigation = [
   { name: "Collab Group", icon: FolderKanban, count: 24, href: "/" },
   { name: "Bulletin", icon: Megaphone, count: 12, href: "/bulletin" },
   { name: "My Collab Group", icon: Users, count: 8, href: "/my-teams" },
-  { name: "My Bulletin", icon: FileText, count: 5, href: "/my-bulletin" },
 ]
 
 export function CollaborationSidebar() {
