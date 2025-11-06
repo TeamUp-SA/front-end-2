@@ -4,9 +4,10 @@ export interface Group {
   description: string;
   ownerID: string;
   members: string[];
-  tags: string[];
+  tags: number[];
   closed: boolean;
-  createdAt: string; // frontend can use ISO string instead of Date
+  date: string;
+  createdAt: string;
 }
 
 export interface GroupCreateRequest {
@@ -14,17 +15,18 @@ export interface GroupCreateRequest {
   description: string;
   ownerID: string;
   members: string[];
-  tags: string[];
+  tags: number[];
   closed: boolean;
+  date: string;
   createdAt: string;
 }
 
 export interface GroupUpdateRequest {
-  title: string;
-  description: string;
-  ownerID: string;
+  title?: string;
+  description?: string;
   members: string[];
-  tags: string[];
-  closed: boolean;
-  createdAt: string;
+  tags?: number[];
+  closed?: boolean;
+  date?: string;
+  createdAt?: string;
 }
