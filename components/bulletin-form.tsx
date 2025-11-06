@@ -26,19 +26,6 @@ import { Group } from "@/types/group"
 import { getGroups } from "@/api/group"
 import { updateBulletin, createBulletin } from "@/api/bulletin"
 
-// // Mock data for edit mode
-// const mockBulletinData: Record<string, any> = {
-//   "1": {
-//     title: "Tech Conference 2025",
-//     description:
-//       "Join us for the annual technology conference featuring the latest innovations in AI, blockchain, and cloud computing.",
-//     date: "2025-03-20",
-//     image: "/tech-conference-poster-banner.jpg",
-//     tags: ["Conference", "Technology", "AI"],
-//     groupIDs: ["1", "2"],
-//   },
-// }
-
 interface BulletinFormProps {
   mode: "create" | "edit"
   bulletinId?: string
@@ -132,7 +119,6 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
     setGroupIDs((prev) => prev.filter((group) => group !== groupToRemove))
   }
 
-
   const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault();
 
@@ -142,11 +128,13 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
           groupID: groupIDs,
           date,
           image,
-          tags: [0],
+          tags,
      };
 
      try {
      let response;
+
+     console.log("payload", payload);
 
      switch (mode) {
           case "create":
