@@ -11,100 +11,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useRouter } from "next/navigation"
 import { Group } from "@/types/group"
 import { useState, useEffect } from "react"
-import { getGroups } from "@/api/group"
+import { getGroups, updateGroup } from "@/api/group"
 import { getTagColor, getTagName } from "@/utils/tagMap"
 
-// const groups = [
-//   {
-//     id: 1,
-//     name: "AI Hackathon 2025",
-//     description: "Build innovative AI solutions for real-world problems",
-//     category: "Hackathon",
-//     categoryColor: "bg-orange-500",
-//     members: [
-//       { name: "Alice Johnson", avatar: "/diverse-woman-portrait.png" },
-//       { name: "Bob Smith", avatar: "/man.jpg" },
-//       { name: "Carol White", avatar: "/diverse-woman-portrait.png" },
-//     ],
-//     dueDate: "Dec 15, 2025",
-//     memberCount: 24,
-//     isJoined: true, // Added isJoined flag
-//   },
-//   {
-//     id: 2,
-//     name: "Climate Change Research",
-//     description: "Analyzing environmental data to predict climate patterns",
-//     category: "Research",
-//     categoryColor: "bg-green-500",
-//     members: [
-//       { name: "Emma Davis", avatar: "/diverse-woman-portrait.png" },
-//       { name: "Frank Miller", avatar: "/man.jpg" },
-//       { name: "Grace Lee", avatar: "/diverse-woman-portrait.png" },
-//     ],
-//     dueDate: "Jan 20, 2026",
-//     memberCount: 12,
-//     isJoined: false,
-//   },
-//   {
-//     id: 3,
-//     name: "Mobile App Development",
-//     description: "Creating a cross-platform mobile application",
-//     category: "Project",
-//     categoryColor: "bg-blue-500",
-//     members: [
-//       { name: "Henry Wilson", avatar: "/man.jpg" },
-//       { name: "Iris Taylor", avatar: "/diverse-woman-portrait.png" },
-//       { name: "Jack Anderson", avatar: "/man.jpg" },
-//     ],
-//     dueDate: "Feb 1, 2026",
-//     memberCount: 18,
-//     isJoined: true,
-//   },
-//   {
-//     id: 4,
-//     name: "Quantum Computing Study",
-//     description: "Exploring quantum algorithms and their applications",
-//     category: "Research",
-//     categoryColor: "bg-green-500",
-//     members: [
-//       { name: "Maya Jackson", avatar: "/diverse-woman-portrait.png" },
-//       { name: "Noah Martin", avatar: "/man.jpg" },
-//     ],
-//     dueDate: "Dec 30, 2025",
-//     memberCount: 8,
-//     isJoined: false,
-//   },
-//   {
-//     id: 5,
-//     name: "Startup Weekend",
-//     description: "48-hour event to launch your startup idea",
-//     category: "Hackathon",
-//     categoryColor: "bg-orange-500",
-//     members: [
-//       { name: "Olivia Garcia", avatar: "/diverse-woman-portrait.png" },
-//       { name: "Paul Rodriguez", avatar: "/man.jpg" },
-//       { name: "Quinn Martinez", avatar: "/diverse-woman-portrait.png" },
-//     ],
-//     dueDate: "Nov 28, 2025",
-//     memberCount: 45,
-//     isJoined: false,
-//   },
-//   {
-//     id: 6,
-//     name: "Web3 Development",
-//     description: "Building decentralized applications on blockchain",
-//     category: "Project",
-//     categoryColor: "bg-blue-500",
-//     members: [
-//       { name: "Ryan Hernandez", avatar: "/man.jpg" },
-//       { name: "Sophia Lopez", avatar: "/diverse-woman-portrait.png" },
-//       { name: "Tyler Gonzalez", avatar: "/man.jpg" },
-//     ],
-//     dueDate: "Mar 15, 2026",
-//     memberCount: 15,
-//     isJoined: true,
-//   },
-// ]
+
+/*mock user_id TODO: getfrom auth context */
+const currentUserID = "507f1f77bcf86cd799439013" // TODO!! now is Mock - it should come from auth context
 
 export function CollabGroupCards() {
   const router = useRouter()
@@ -141,13 +53,25 @@ export function CollabGroupCards() {
     router.push("/collab-group/create")
   }
 
-  const handleJoinGroup = (e: React.MouseEvent, groupId: string) => {
+  const handleJoinGroup = async (e: React.MouseEvent, groupID: string) => {
     e.preventDefault() // Prevent navigation when clicking join button
     /* TODO: plug backend */
+    const group = groups.find(g => g.groupID === groupID)
+    const payload = {
+          members: [...(group?.members ?? []), currentUserID]
+     };
+    try {
+      const res = await updateGroup(groupID,payload);
+      console.log("add member successfull")
+      alert(`Successfully join group ${group?.title}`);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch bulletins");
+      console.log(err);
+      alert(`Failed to join group ${group?.title}`);
+    }
+  
   }
 
-  /*mock user_id TODO: getfrom auth context */
-  const currentUserID = "507f1f77bcf86cd799439013" // TODO!! now is Mock - it should come from auth context
   const isJoined = (groupID: string) => {
     const group = groups.find(g => g.groupID === groupID)
     if (!group) return false

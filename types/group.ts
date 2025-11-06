@@ -22,12 +22,12 @@ export interface GroupCreateRequest {
 }
 
 export interface GroupUpdateRequest {
-  title: string;
-  description: string;
-  ownerID: string;
+  title?: string;
+  description?: string;
+  ownerID?: string;
   members: string[];
-  tags: number[];
-  closed: boolean;
-  date: string;
-  createdAt: string;
+  tags?: number[];
+  closed?: boolean;
+  date?: string;
+  createdAt?: string;
 }
