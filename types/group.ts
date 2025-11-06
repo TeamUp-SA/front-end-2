@@ -6,7 +6,8 @@ export interface Group {
   members: string[];
   tags: string[];
   closed: boolean;
-  createdAt: string; // frontend can use ISO string instead of Date
+  date: string;
+  createdAt: string;
 }
 
 export interface GroupCreateRequest {
@@ -16,6 +17,7 @@ export interface GroupCreateRequest {
   members: string[];
   tags: string[];
   closed: boolean;
+  date: string;
   createdAt: string;
 }
 
@@ -26,5 +28,6 @@ export interface GroupUpdateRequest {
   members: string[];
   tags: string[];
   closed: boolean;
+  date: string;
   createdAt: string;
 }
