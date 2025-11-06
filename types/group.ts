@@ -4,7 +4,7 @@ export interface Group {
   description: string;
   ownerID: string;
   members: string[];
-  tags: string[];
+  tags: number[];
   closed: boolean;
   date: string;
   createdAt: string;
@@ -15,7 +15,7 @@ export interface GroupCreateRequest {
   description: string;
   ownerID: string;
   members: string[];
-  tags: string[];
+  tags: number[];
   closed: boolean;
   date: string;
   createdAt: string;
@@ -26,7 +26,7 @@ export interface GroupUpdateRequest {
   description: string;
   ownerID: string;
   members: string[];
-  tags: string[];
+  tags: number[];
   closed: boolean;
   date: string;
   createdAt: string;
