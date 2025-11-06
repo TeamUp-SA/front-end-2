@@ -16,7 +16,7 @@ import { getTagColor, getTagName } from "@/utils/tagMap"
 
 
 /*mock user_id TODO: getfrom auth context */
-const currentUserID = "507f1f77bcf86cd799439013" // TODO!! now is Mock - it should come from auth context
+const currentUserID = "68ee328fa32e8622ad6693b3" // TODO!! now is Mock - it should come from auth context
 
 export function CollabGroupCards() {
   const router = useRouter()

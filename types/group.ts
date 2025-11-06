@@ -24,7 +24,6 @@ export interface GroupCreateRequest {
 export interface GroupUpdateRequest {
   title?: string;
   description?: string;
-  ownerID?: string;
   members: string[];
   tags?: number[];
   closed?: boolean;

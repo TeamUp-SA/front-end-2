@@ -138,7 +138,7 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
 
      switch (mode) {
           case "create":
-          response = await createBulletin({...payload, authorID: "507f1f77bcf86cd799999999"}); 
+          response = await createBulletin({...payload, authorID: "507f1f77bcf86cd799999999"}); // add real userID
           break;
 
           case "edit":
