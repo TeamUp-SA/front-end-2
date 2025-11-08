@@ -15,37 +15,6 @@ import { getMemberById, updateMember } from "@/api/member"
 
 export function MyProfileForm() {
   const [isEditing, setIsEditing] = useState(false)
-  // const [profile, setProfile] = useState({
-  //   name: "John Doe",
-  //   email: "john.doe@example.com",
-  //   bio: "Passionate about AI and machine learning. Love collaborating on innovative projects.",
-  //   avatar: "/man.jpg",
-  //   github: "https://github.com/johndoe",
-  //   linkedin: "https://linkedin.com/in/johndoe",
-  //   website: "https://johndoe.com",
-  //   skills: ["JavaScript", "React", "Node.js", "Python"],
-  // })
-
-  // const [educations, setEducations] = useState<Education[]>([
-  //   {
-  //     school: "MIT",
-  //     degree: "Bachelor of Science",
-  //     field: "Computer Science",
-  //     startYear: 2018,
-  //     endYear: 2022,
-  //   },
-  // ])
-
-  // const [experiences, setExperiences] = useState<Experience[]>([
-  //   {
-  //     title: "Frontend Developer",
-  //     company: "Tech Corp",
-  //     description: "Built responsive web applications using React and TypeScript",
-  //     startYear: 2022,
-  //     endYear: 2024,
-  //   },
-  // ])
-
   const [profile, setProfile] = useState<Member>();
   const [educations, setEducations] = useState<Education[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
