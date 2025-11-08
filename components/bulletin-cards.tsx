@@ -106,7 +106,7 @@ export function BulletinCards() {
 
                 {/* Collab Groups Count */}
                 <div className="text-sm text-muted-foreground">
-                  {bulletin.groupID.length} Collaboration Groups 
+                  {(bulletin.groupID?.length ?? 0)} Collaboration Groups
                 </div>
               </CardContent>
             </Card>

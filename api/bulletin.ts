@@ -12,14 +12,24 @@ export const getBulletins = async () => {
 
 // GET /bulletin/{bulletin_id}
 export const getBulletinById = async (id: string) => {
-  const res = await axios.get(`/bulletin/${id}`);
-  return res.data;
+   try {
+    const res = await axios.get(`/bulletin/${id}`);
+    return res.data;
+  } catch (err) {
+    console.error(`Failed to fetch bulletin id ${id}:`, err);
+    return null; 
+  }
 };
 
 // GET /bulletin/author/{author_id}
 export const getBulletinsByAuthor = async (authorId: string) => {
-  const res = await axios.get(`/bulletin/author/${authorId}`);
-  return res.data;
+    try {
+    const res = await axios.get(`/bulletin/author/${authorId}`);
+    return res.data;
+  } catch (err) {
+    console.error(`Failed to fetch bulletin by author id ${authorId}:`, err);
+    return null; 
+  }
 };
 
 // GET /bulletin/group/{group_id}

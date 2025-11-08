@@ -9,8 +9,13 @@ export const getMembers = async () => {
 
 // GET /member/{member_id} - fetch single member by ID
 export const getMemberById = async (id: string) => {
-  const res = await axios.get(`/member/${id}`);
-  return res.data;
+  try {
+    const res = await axios.get(`/member/${id}`);
+    return res.data;
+  } catch (err) {
+    // console.error(`"❌ member fetch failed but handled" ${id}:`, err);
+    return null; 
+  }
 };
 
 // POST /member/ - create a new member

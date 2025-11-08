@@ -3,23 +3,40 @@ import { ArrowLeft, GraduationCap, Mail, MapPin, Briefcase } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Member } from "@/types/member"
+import { getMemberById } from "@/api/member"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Camera, Plus, Trash2, Github, Linkedin, Globe } from "lucide-react"
 
-// Mock data
-const profileData: Record<string, any> = {
-  "1": {
-    name: "Alice Johnson",
-    avatar: "/diverse-woman-portrait.png",
-    education: "MIT - Computer Science",
-    email: "alice.johnson@example.com",
-    location: "San Francisco, CA",
-    bio: "Passionate software engineer with expertise in AI and machine learning. Love building innovative solutions that make a difference.",
-    experience: "Senior Software Engineer at Tech Corp",
-    skills: ["Python", "TensorFlow", "React", "Node.js", "AWS"],
-  },
-}
 
 export function ProfileDetail({ id }: { id: string }) {
-  const profile = profileData[id] || profileData["1"]
+  const [profile, setProfile] = useState<Member | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+    
+  const router = useRouter();
+    
+  const fetchBulletin = async () => {
+          try {
+            setLoading(true);
+            setError(null);
+  
+            const res = await getMemberById(id);
+            setProfile(res.data); 
+          } catch (err: any) {
+            setError(err.response?.data?.message || "Failed to fetch member");
+            console.log(err);
+          } finally {
+            setLoading(false);
+          }
+    };
+  
+ useEffect(() => {
+      fetchBulletin();
+  }, [id]); 
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -34,36 +51,27 @@ export function ProfileDetail({ id }: { id: string }) {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-6">
             <Avatar className="h-32 w-32">
-              <AvatarImage src={profile.avatar || "/placeholder.svg"} alt={profile.name} />
-              <AvatarFallback className="text-2xl">
-                {profile.name
-                  .split(" ")
-                  .map((n: string) => n[0])
-                  .join("")}
-              </AvatarFallback>
+               <AvatarImage
+                    src={profile?.profileImage || "/user-placeholder.svg"}
+                    alt={profile?.username}
+               />
+               <AvatarFallback>
+                 {`${profile?.firstName?.[0] ?? ""}${profile?.lastName?.[0] ?? ""}`}
+               </AvatarFallback>
             </Avatar>
+  
 
             <div className="flex-1 space-y-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">{profile.name}</h1>
-                <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                  <GraduationCap className="h-4 w-4" />
-                  <span>{profile.education}</span>
-                </div>
+                <h1 className="text-3xl font-bold text-foreground">{profile?.firstName} {profile?.lastName}</h1>
               </div>
 
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  <span>{profile.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>{profile.location}</span>
+                  <span>{profile?.email}</span>
                 </div>
               </div>
-
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Connect</Button>
             </div>
           </div>
         </CardContent>
@@ -75,22 +83,118 @@ export function ProfileDetail({ id }: { id: string }) {
           <CardTitle>About</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground leading-relaxed">{profile.bio}</p>
+          <p className="text-muted-foreground leading-relaxed">{profile?.bio}</p>
         </CardContent>
       </Card>
 
-      {/* Experience */}
+      {/* Social Links */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Social Links</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+
+          <div className="space-y-2">
+            <Label htmlFor="github">
+              <Github className="h-4 w-4 inline mr-2" />
+              GitHub
+            </Label>
+              <p className="text-foreground">{profile?.github}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="linkedin">
+              <Linkedin className="h-4 w-4 inline mr-2" />
+              LinkedIn
+            </Label>
+              <p className="text-foreground">{profile?.linkedIn}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="website">
+              <Globe className="h-4 w-4 inline mr-2" />
+              Personal Website
+            </Label>
+              <p className="text-foreground">{profile?.website}</p>
+          </div>
+        </div>
+        </CardContent>
+      </Card>
+
+       {/* Experience */}
       <Card>
         <CardHeader>
           <CardTitle>Experience</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-start gap-3">
-            <Briefcase className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="font-medium text-foreground">{profile.experience}</p>
-            </div>
-          </div>
+          {profile?.experience?.map((exp, index) => (
+            <Card key={index} className="p-4">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                    <p className="text-foreground font-medium">{exp.title}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Company</Label>
+                    <p className="text-foreground">{exp.company}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                    <p className="text-foreground text-sm">{exp.description}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Start Year</Label>
+                      <p className="text-foreground">{exp.startYear}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>End Year</Label>
+                      <p className="text-foreground">{exp.endYear}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </CardContent>
+      </Card>
+
+       {/* Education */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Education</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {profile?.education?.map((edu, index) => (
+            <Card key={index} className="p-4">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>School</Label>
+                    <p className="text-foreground">{edu.school}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Degree</Label>
+                      <p className="text-foreground">{edu.degree}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Field</Label>
+                      <p className="text-foreground">{edu.field}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Start Year</Label>
+                      <p className="text-foreground">{edu.startYear}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>End Year</Label>
+                      <p className="text-foreground">{edu.endYear}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
         </CardContent>
       </Card>
 
@@ -101,7 +205,7 @@ export function ProfileDetail({ id }: { id: string }) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {profile.skills.map((skill: string) => (
+            {profile?.skills?.map((skill: string) => (
               <span
                 key={skill}
                 className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium"
