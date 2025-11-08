@@ -65,7 +65,9 @@ export function CollabGroupForm({ mode, groupId }: CollabGroupFormProps) {
   };
 
   useEffect(() => {
-        fetchGroup();
+     if (mode === "edit" && groupId) {
+          fetchGroup();
+      }
     }, [groupId]); 
 
  // set existing data (placrholder)
@@ -127,6 +129,9 @@ export function CollabGroupForm({ mode, groupId }: CollabGroupFormProps) {
        console.error("Failed to submit group:", err.response?.data || err.message);
        }
   };
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

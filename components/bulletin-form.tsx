@@ -44,7 +44,7 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // all collab gropus
+  // all collab gropus (for dropdown select)
   const [groups, setGroups] = useState<Group[]>([]); 
   
   // existing data
@@ -86,12 +86,12 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
   };
 
   useEffect(() => {
-      fetchBulletin();
+      if (mode === "edit" && bulletinId) {
+          fetchBulletin();
+      }
       fetchGroups();
   }, [bulletinId]); 
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   // set existing data
   useEffect(() => {
@@ -119,10 +119,14 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
 
 
    const handleAddGroup = (selectedGroup: string) => {
-  if (!groupIDs.includes(selectedGroup)) {
-    setGroupIDs((prev) => [...prev, selectedGroup])
-  }
-  }
+     if (!selectedGroup) return; 
+
+     setGroupIDs((prev) => {
+     const current = prev || [];          
+     if (current.includes(selectedGroup)) return current;
+     return [...current, selectedGroup];
+     });
+     };
 
 // Remove tag by clicking the X
   const handleRemoveGroup = (groupToRemove: string) => {
@@ -168,6 +172,9 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
      }
 };
 
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -257,21 +264,27 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
                </Select>
                </div>
 
+          
                <div className="flex flex-wrap gap-2 mt-2">
-               {tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="gap-1">
-                    {tagNameMap[tag] ?? tag}
-                    <button
-                         type="button"
-                         onClick={() => handleRemoveTag(tag)}
-                         className="ml-1 hover:text-destructive"
-                    >
-                         <X className="h-3 w-3" />
-                    </button>
-                    </Badge>
-               ))}
+               {tags ? (
+                    tags.map((tag) => (
+                         <Badge key={tag} variant="secondary" className="gap-1">
+                         {tagNameMap[tag] ?? tag}
+                         <button
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              className="ml-1 hover:text-destructive"
+                         >
+                              <X className="h-3 w-3" />
+                         </button>
+                         </Badge>
+                    ))
+                    ) : (
+                    <span className="text-sm text-muted-foreground">No tags added</span>
+                    )}
                </div>
-               </div>
+
+          </div>
             
 
             {/* Group IDs */}
@@ -293,23 +306,28 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
                </div>
 
                <div className="flex flex-wrap gap-2 mt-2">
-               {groupIDs.map((id) => {
-                    const group = groups.find((g) => g.groupID === id); // find the matching group object
-                    return (
-                    <Badge key={id} variant="secondary" className="gap-1">
-                    {group ? group.title : "Unknown Group"}
-                    <button
-                         type="button"
-                         onClick={() => handleRemoveGroup(id)}
-                         className="ml-1 hover:text-destructive"
-                    >
-                         <X className="h-3 w-3" />
-                    </button>
-                    </Badge>
-               );
-               })}
+               {groupIDs ? (
+                    groupIDs.map((id) => {
+                         const group = groups.find((g) => g.groupID === id); // find matching group object
+                         return (
+                         <Badge key={id} variant="secondary" className="gap-1">
+                              {group ? group.title : "Unknown Group"}
+                              <button
+                              type="button"
+                              onClick={() => handleRemoveGroup(id)}
+                              className="ml-1 hover:text-destructive"
+                              >
+                              <X className="h-3 w-3" />
+                              </button>
+                         </Badge>
+                         );
+                    })
+                    ) : (
+                    <span className="text-sm text-muted-foreground">No collaboration groups added</span>
+                    )}
                </div>
-               </div>
+
+          </div>
 
             {/* Submit Button */}
             <div className="flex gap-3 pt-4">

@@ -111,7 +111,7 @@ export function CollabGroupDetail({ id }: { id: string }) {
         await fetchGroup();
 
       } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to fetch bulletins");
+        setError(err.response?.data?.message || "Failed to fetch groups");
         console.log(err);
         alert(`Failed to join group ${group?.title}`);
       }

@@ -153,11 +153,19 @@ export function BulletinDetail({ id }: { id: string }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {groups.map((group: any) => {
-               if (!group) {
+
+            {groups.length === 0 && (
+              <p className="text-muted-foreground leading-relaxed">
+                No related collaboration groups
+              </p>
+            )}
+
+            {groups.length > 0 &&
+              groups.map((group: any) => {
+                if (!group) {
                   return (
                     <div
-                      key={null}
+                      key="loading"
                       className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 animate-pulse"
                     >
                       <div className="h-12 w-12 rounded-full bg-gray-300" />
@@ -169,22 +177,24 @@ export function BulletinDetail({ id }: { id: string }) {
                   );
                 }
 
-              return (
-              <Link key={group.data.groupID} href={`/collab-group/${group.data.groupID}`}>
-                <div className="flex items-center justify-between p-4 rounded-lg hover:bg-accent transition-colors cursor-pointer border border-border">
-                  <div className="flex items-center gap-3">
-                    <UsersIcon className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{group.data.title}</span>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    View Group
-                  </Button>
-                </div>
-              </Link>
-              )
-            })}
+                return (
+                  <Link key={group.data.groupID} href={`/collab-group/${group.data.groupID}`}>
+                    <div className="flex items-center justify-between p-4 rounded-lg hover:bg-accent transition-colors cursor-pointer border border-border">
+                      <div className="flex items-center gap-3">
+                        <UsersIcon className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium text-foreground">{group.data.title}</span>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        View Group
+                      </Button>
+                    </div>
+                  </Link>
+                );
+              })}
+
           </div>
         </CardContent>
+
       </Card>
     </div>
   )
