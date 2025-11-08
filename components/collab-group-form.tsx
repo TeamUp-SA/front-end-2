@@ -13,49 +13,120 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-
-// Mock data for edit mode
-const mockGroupData: Record<string, any> = {
-  "1": {
-    title: "AI Hackathon 2025",
-    description: "Build innovative AI solutions for real-world problems",
-    tags: ["Hackathon", "AI", "Innovation"],
-    closed: false,
-  },
-}
+import { Group } from "@/types/group"
+import { getGroupById } from "@/api/group"
+import { useEffect } from "react"
+import { createGroup, updateGroup } from "@/api/group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { tagNameMap } from "@/utils/tagMap"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 interface CollabGroupFormProps {
   mode: "create" | "edit"
   groupId?: string
 }
 
+
 export function CollabGroupForm({ mode, groupId }: CollabGroupFormProps) {
   const router = useRouter()
-  const existingData = mode === "edit" && groupId ? mockGroupData[groupId] : null
+  // current user
+  const currentUser = useCurrentUser();
+  const currentUserID = currentUser?.memberID;
+  // group by id
+  const [group, setGroup] = useState<Group | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // existing data
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
+  const [members, setMembers] = useState<string[]>([]);
+  const [tags, setTags] = useState<number[]>([]);
 
-  const [title, setTitle] = useState(existingData?.title || "")
-  const [description, setDescription] = useState(existingData?.description || "")
-  const [tags, setTags] = useState<string[]>(existingData?.tags || [])
-  const [tagInput, setTagInput] = useState("")
-  const [closed, setClosed] = useState(existingData?.closed || false)
+  const fetchGroup = async () => {
+        try {
+          setLoading(true);
+          setError(null);
 
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()])
-      setTagInput("")
-    }
+          const res = await getGroupById(groupId as string);
+          setGroup(res.data); 
+        } catch (err: any) {
+          setError(err.response?.data?.message || "Failed to fetch group");
+          console.log(err);
+        } finally {
+          setLoading(false);
+        }
+  };
+
+  useEffect(() => {
+        fetchGroup();
+    }, [groupId]); 
+
+ // set existing data (placrholder)
+  useEffect(() => {
+    if (group && mode === "edit") {
+      setTitle(group.title);
+      setDescription(group.description);
+      setDate(group.date);
+      setMembers(group.members);
+      setTags(group.tags);
+  }}, [group, mode]); 
+
+  const handleAddTag = (selectedTag: number) => {
+  if (!tags.includes(selectedTag)) {
+    setTags((prev) => [...prev, selectedTag])
+  }
   }
 
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove))
+  // Remove tag by clicking the X
+  const handleRemoveTag = (tagToRemove: number) => {
+    setTags((prev) => prev.filter((tag) => tag !== tagToRemove))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    /* TODO: plug backend */
-    // Submit form data: { title, description, tags, closed }
-    router.push("/")
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+       e.preventDefault();
+  
+       const payload = {
+            title,
+            description,
+            members,
+            date,
+            tags,
+            closed: false
+       };
+  
+       try {
+       let response;
+  
+       console.log("payload", payload);
+  
+       switch (mode) {
+            case "create":
+            response = await createGroup({...payload, ownerID: currentUserID}); // add real userID
+            break;
+  
+            case "edit":
+            if (!groupId) throw new Error("No group ID for edit mode");
+            response = await updateGroup(groupId, payload); 
+            break;
+  
+            default:
+            throw new Error("Invalid mode");
+       }
+  
+       console.log("Submission successful:", response);
+       router.push("/"); 
+  
+       } catch (err: any) {
+       console.error("Failed to submit group:", err.response?.data || err.message);
+       }
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -99,41 +170,45 @@ export function CollabGroupForm({ mode, groupId }: CollabGroupFormProps) {
               />
             </div>
 
-            {/* Tags */}
+             {/* Tags */}
             <div className="space-y-2">
-              <Label htmlFor="tags">Tags / Category</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="tags"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  placeholder="Add a tag (e.g., Hackathon, Research, Project)"
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
-                />
-                <Button type="button" onClick={handleAddTag} variant="outline" size="icon">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1">
-                    {tag}
-                    <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            </div>
+               <Label htmlFor="tags">Tags</Label>
+               <div className="flex gap-2">
+               <Select onValueChange={(value) => handleAddTag(Number(value))}>
+                    <SelectTrigger className="w-[200px]" id="tags">
+                    <SelectValue placeholder="Select a tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {Object.entries(tagNameMap).map(([key, label]) => (
+                         <SelectItem key={key} value={key}>
+                         {label}
+                         </SelectItem>
+                    ))}
+                    </SelectContent>
+               </Select>
+               </div>
 
-            {/* Closed Status */}
-            <div className="flex items-center justify-between space-x-2">
-              <div className="space-y-0.5">
-                <Label htmlFor="closed">Closed Group</Label>
-                <p className="text-sm text-muted-foreground">Prevent new members from joining</p>
-              </div>
-              <Switch id="closed" checked={closed} onCheckedChange={setClosed} />
-            </div>
+               <div className="flex flex-wrap gap-2 mt-2">
+               {tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="gap-1">
+                    {tagNameMap[tag] ?? tag}
+                    <button
+                         type="button"
+                         onClick={() => handleRemoveTag(tag)}
+                         className="ml-1 hover:text-destructive"
+                    >
+                         <X className="h-3 w-3" />
+                    </button>
+                    </Badge>
+               ))}
+               </div>
+             </div>
+
+             {/* Date */}
+          <div className="space-y-2">
+               <Label htmlFor="date">Event Date *</Label>
+               <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </div>
 
             {/* Submit Button */}
             <div className="flex gap-3 pt-4">

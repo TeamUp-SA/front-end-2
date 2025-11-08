@@ -25,6 +25,7 @@ import { tagNameMap } from "@/utils/tagMap"
 import { Group } from "@/types/group"
 import { getGroups } from "@/api/group"
 import { updateBulletin, createBulletin } from "@/api/bulletin"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 interface BulletinFormProps {
   mode: "create" | "edit"
@@ -33,10 +34,26 @@ interface BulletinFormProps {
 
 export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
   const router = useRouter()
+
+  // current user
+  const currentUser = useCurrentUser();
+  const currentUserID = currentUser?.memberID;
+
+  // bulletin by id
   const [bulletin, setBulletin] = useState<Bulletin | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [groups, setGroups] = useState<Group[]>([]);
+
+  // all collab gropus
+  const [groups, setGroups] = useState<Group[]>([]); 
+  
+  // existing data
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
+  const [image, setImage] = useState("");
+  const [tags, setTags] = useState<number[]>([]);
+  const [groupIDs, setGroupIDs] = useState<string[]>([]); // existing groupIDs bind to this bulletin
   
   const fetchBulletin = async () => {
         try {
@@ -73,17 +90,10 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
       fetchGroups();
   }, [bulletinId]); 
 
-  const existingData = mode === "edit" && bulletinId ? bulletin : null
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState("");
-  const [image, setImage] = useState("");
-  const [tags, setTags] = useState<number[]>([]);
-  const [tagInput, setTagInput] = useState("");
-  const [groupIDs, setGroupIDs] = useState<string[]>([]);
-  const [groupIDInput, setGroupIDInput] = useState("");
-
+  // set existing data
   useEffect(() => {
     if (bulletin && mode === "edit") {
       setTitle(bulletin.title);
@@ -138,7 +148,7 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
 
      switch (mode) {
           case "create":
-          response = await createBulletin({...payload, authorID: "507f1f77bcf86cd799999999"}); // add real userID
+          response = await createBulletin({...payload, authorID: currentUserID});
           break;
 
           case "edit":

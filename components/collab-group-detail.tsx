@@ -14,36 +14,22 @@ import { getMemberById } from "@/api/member"
 import { getGroupById, updateGroup, deleteGroup} from "@/api/group"
 import { getTagColor, getTagName } from "@/utils/tagMap"
 import { getRandomColor } from "@/utils/getRandomColor"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
-// Mock data - in real app, fetch based on id
-// const groupData: Record<string, any> = {
-//   "1": {
-//     name: "AI Hackathon 2025",
-//     description:
-//       "Build innovative AI solutions for real-world problems. This hackathon focuses on creating practical AI applications that can solve everyday challenges. Participants will work in teams to develop prototypes and present their solutions to a panel of judges.",
-//     category: "Hackathon",
-//     categoryColor: "bg-orange-500",
-//     date: "December 15, 2025",
-//     time: "9:00 AM - 6:00 PM",
-//     ownerID: "current-user-id", // Mock owner ID
-//     members: [
-//       { id: 1, name: "Alice Johnson", avatar: "/diverse-woman-portrait.png", education: "MIT - Computer Science" },
-//       { id: 2, name: "Bob Smith", avatar: "/man.jpg", education: "Stanford - AI Research" },
-//       { id: 3, name: "Carol White", avatar: "/diverse-woman-portrait.png", education: "Berkeley - Data Science" },
-//       { id: 4, name: "David Brown", avatar: "/man.jpg", education: "CMU - Machine Learning" },
-//       { id: 5, name: "Emma Davis", avatar: "/diverse-woman-portrait.png", education: "Harvard - Computer Science" },
-//     ],
-//   },
-// }
-const currentUserID = "68ee328fa32e8622ad6693b3" // TODO!! now is Mock - it should come from auth context
 
 export function CollabGroupDetail({ id }: { id: string }) {
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Group Member data array
   const [members, setMembers] = useState<any[]>([]);
   
   const router = useRouter();
+
+  // current user
+  const currentUser = useCurrentUser();
+  const currentUserID = currentUser?.memberID;
   
   const fetchGroup = async () => {
         try {
@@ -75,7 +61,9 @@ export function CollabGroupDetail({ id }: { id: string }) {
   }, [id]); 
 
   useEffect(()=> {
+    if (group?.members) {
     fetchMembers();
+  }
   }, [group?.members])
   
   if (loading) return <p>Loading...</p>;
@@ -120,6 +108,8 @@ export function CollabGroupDetail({ id }: { id: string }) {
         const res = await updateGroup(id,payload);
         console.log("add member successful")
         alert(`Successfully join group ${group?.title}`);
+        await fetchGroup();
+
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to fetch bulletins");
         console.log(err);
@@ -232,24 +222,45 @@ export function CollabGroupDetail({ id }: { id: string }) {
           <CardTitle>Members</CardTitle>
         </CardHeader>
         <CardContent>
-            <div className="space-y-4">
-              {members && members.length > 0 ? (
-                members.map((member: any) => (
-                  <Link key={member.data.memberID} href={`/profile/${member.data.memberID}`}>
+          <div className="space-y-4">
+            {members && members.length > 0 ? (
+              members.map((member: any) => {
+                
+                // Case 1: Member that no data
+                if (!member) {
+                  return (
+                    <div
+                      key={null}
+                      className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 animate-pulse"
+                    >
+                      <div className="h-12 w-12 rounded-full bg-gray-300" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-1/3 bg-gray-300 rounded" />
+                        <div className="h-3 w-1/2 bg-gray-300 rounded" />
+                      </div>
+                    </div>
+                  );
+                }
+
+                const data = member.data;
+
+                // Case 2: Normal member
+                return (
+                  <Link key={data.memberID} href={`/profile/${data.memberID}`}>
                     <div className="flex items-center gap-4 p-4 rounded-lg hover:bg-accent transition-colors cursor-pointer">
                       <Avatar className="h-12 w-12">
                         <AvatarImage
-                          src={member.data.profileImage || "/user-placeholder.svg"}
-                          alt={member.data.username}
+                          src={data.profileImage || "/user-placeholder.svg"}
+                          alt={data.username}
                         />
                         <AvatarFallback>
-                          {`${member.data.firstName?.[0] ?? ""}${member.data.lastName?.[0] ?? ""}`}
+                          {`${data.firstName?.[0] ?? ""}${data.lastName?.[0] ?? ""}`}
                         </AvatarFallback>
                       </Avatar>
 
                       <div className="flex-1">
                         <h3 className="font-semibold text-foreground">
-                          {member.data.firstName} {member.data.lastName}
+                          {data.firstName} {data.lastName}
                         </h3>
 
                         <div className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -257,9 +268,9 @@ export function CollabGroupDetail({ id }: { id: string }) {
                           <div className="flex items-center gap-2">
                             <GraduationCap className="h-4 w-4 text-foreground/70" />
                             <span className="truncate">
-                              {member.data.education && member.data.education.length > 0 ? (
+                              {data.education && data.education.length > 0 ? (
                                 (() => {
-                                  const latestEdu = [...member.data.education].sort(
+                                  const latestEdu = [...data.education].sort(
                                     (a, b) => (b.endYear ?? 0) - (a.endYear ?? 0)
                                   )[0];
                                   return (
@@ -267,7 +278,9 @@ export function CollabGroupDetail({ id }: { id: string }) {
                                       <span className="text-foreground">
                                         {latestEdu.degree ?? ""} {latestEdu.field ?? ""}
                                       </span>{" "}
-                                      <span className="text-muted-foreground/70">@ {latestEdu.school}</span>
+                                      <span className="text-muted-foreground/70">
+                                        @ {latestEdu.school}
+                                      </span>
                                     </>
                                   );
                                 })()
@@ -278,9 +291,9 @@ export function CollabGroupDetail({ id }: { id: string }) {
                           </div>
 
                           {/* Skills badges */}
-                          {member.data.skills && member.data.skills.length > 0 && (
+                          {data.skills && data.skills.length > 0 && (
                             <div className="flex flex-wrap gap-2">
-                              {member.data.skills.map((skill) => (
+                              {data.skills.map((skill: string) => (
                                 <Badge
                                   key={skill}
                                   variant="secondary"
@@ -298,14 +311,15 @@ export function CollabGroupDetail({ id }: { id: string }) {
                       </div>
                     </div>
                   </Link>
-                ))
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  No members have joined yet.
-                </div>
-              )}
-            </div>
-          </CardContent>
+                );
+              })
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                No members have joined yet.
+              </div>
+            )}
+          </div>
+        </CardContent>
 
       </Card>
     </div>

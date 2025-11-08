@@ -13,10 +13,8 @@ import { Group } from "@/types/group"
 import { useState, useEffect } from "react"
 import { getGroups, updateGroup } from "@/api/group"
 import { getTagColor, getTagName } from "@/utils/tagMap"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
-
-/*mock user_id TODO: getfrom auth context */
-const currentUserID = "68ee328fa32e8622ad6693b3" // TODO!! now is Mock - it should come from auth context
 
 export function CollabGroupCards() {
   const router = useRouter()
@@ -24,6 +22,9 @@ export function CollabGroupCards() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // current user
+  const currentUser = useCurrentUser();
+  const currentUserID = currentUser?.memberID;
 
   const fetchGroups = async () => {
       try {
@@ -63,6 +64,7 @@ export function CollabGroupCards() {
     try {
       const res = await updateGroup(groupID,payload);
       console.log("add member successfull")
+      await fetchGroups();
       alert(`Successfully join group ${group?.title}`);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to fetch bulletins");
@@ -93,9 +95,14 @@ export function CollabGroupCards() {
         </Button>
       </div>
 
-      {/* Group Cards Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {groups.map((group) => (
+        {/* Group Cards Grid */}
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {!groups || groups.length === 0 ? (
+        <div className="text-muted-foreground py-10">
+          No collaboration groups
+        </div>
+      ) : (
+        groups.map((group) => (
           <Link key={group.groupID} href={`/collab-group/${group.groupID}`}>
             <Card className="flex flex-col h-full hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer">
               <CardHeader>
@@ -109,22 +116,20 @@ export function CollabGroupCards() {
                   </Button>
                 </div>
                 <div className="flex items-center gap-2 pt-2">
-                    {group.tags.map((tag)=>(
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                                  <div className={`h-2 w-2 rounded-full ${getTagColor(tag)} mr-1.5`} />
-                                      {getTagName(tag)}
-                              </Badge>
-                                  ))}
+                  {group.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="text-xs">
+                      <div className={`h-2 w-2 rounded-full ${getTagColor(tag)} mr-1.5`} />
+                      {getTagName(tag)}
+                    </Badge>
+                  ))}
                 </div>
               </CardHeader>
+
               <CardContent className="flex-1 space-y-4">
-                {/* Members */}
-                {/* Collab Groups Count */}
                 <div className="text-sm text-muted-foreground">
                   {group.members.length} Members
                 </div>
 
-                {/* Due Date */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>Event Date {group.date}</span>
@@ -150,8 +155,10 @@ export function CollabGroupCards() {
               </CardContent>
             </Card>
           </Link>
-        ))}
-      </div>
+        ))
+      )}
     </div>
+  </div>
+
   )
 }

@@ -18,7 +18,6 @@ export interface GroupCreateRequest {
   tags: number[];
   closed: boolean;
   date: string;
-  createdAt: string;
 }
 
 export interface GroupUpdateRequest {
@@ -28,5 +27,4 @@ export interface GroupUpdateRequest {
   tags?: number[];
   closed?: boolean;
   date?: string;
-  createdAt?: string;
 }
