@@ -1,23 +1,65 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Users } from "lucide-react"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Users } from "lucide-react";
+import { getGoogleAuthUrl, login } from "@/api/auth";
 
 export function LoginForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    /* TODO: plug backend */
-  }
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      setError(
+        errorParam === "oauth"
+          ? "Google sign-in was cancelled or failed. Please try again."
+          : errorParam
+      );
+    }
+  }, [searchParams]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await login({ email: email.trim(), password });
+      router.push("/");
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Unable to sign in. Please try again.";
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    setError(null);
+    const url = getGoogleAuthUrl();
+    window.location.assign(url);
+  };
 
   return (
     <Card className="w-full max-w-md">
@@ -56,17 +98,44 @@ export function LoginForm() {
               required
             />
           </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full">
-            Sign In
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              "Sign In"
+            )}
           </Button>
         </form>
+        <div className="my-4">
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs uppercase text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 w-full"
+            onClick={handleGoogleLogin}
+            disabled={isSubmitting}
+          >
+            Continue with Google
+          </Button>
+        </div>
         <div className="mt-4 text-center text-sm text-muted-foreground">
           Don't have an account?{" "}
-          <Link href="/auth/register" className="text-primary hover:underline font-medium">
+          <Link
+            href="/auth/register"
+            className="text-primary hover:underline font-medium"
+          >
             Sign up
           </Link>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
