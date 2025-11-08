@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,61 +7,103 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Camera, Plus, Trash2, Github, Linkedin, Globe } from "lucide-react"
-
-type Experience = {
-  title: string
-  company: string
-  description: string
-  startYear: number
-  endYear: number
-}
-
-type Education = {
-  school: string
-  degree: string
-  field: string
-  startYear: number
-  endYear: number
-}
+import { Member, Education, Experience } from "@/types/member"
+import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
+import { getMemberById, updateMember } from "@/api/member"
 
 export function MyProfileForm() {
   const [isEditing, setIsEditing] = useState(false)
-  const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    bio: "Passionate about AI and machine learning. Love collaborating on innovative projects.",
-    avatar: "/man.jpg",
-    github: "https://github.com/johndoe",
-    linkedin: "https://linkedin.com/in/johndoe",
-    website: "https://johndoe.com",
-    skills: ["JavaScript", "React", "Node.js", "Python"],
-  })
+  // const [profile, setProfile] = useState({
+  //   name: "John Doe",
+  //   email: "john.doe@example.com",
+  //   bio: "Passionate about AI and machine learning. Love collaborating on innovative projects.",
+  //   avatar: "/man.jpg",
+  //   github: "https://github.com/johndoe",
+  //   linkedin: "https://linkedin.com/in/johndoe",
+  //   website: "https://johndoe.com",
+  //   skills: ["JavaScript", "React", "Node.js", "Python"],
+  // })
 
-  const [educations, setEducations] = useState<Education[]>([
-    {
-      school: "MIT",
-      degree: "Bachelor of Science",
-      field: "Computer Science",
-      startYear: 2018,
-      endYear: 2022,
-    },
-  ])
+  // const [educations, setEducations] = useState<Education[]>([
+  //   {
+  //     school: "MIT",
+  //     degree: "Bachelor of Science",
+  //     field: "Computer Science",
+  //     startYear: 2018,
+  //     endYear: 2022,
+  //   },
+  // ])
 
-  const [experiences, setExperiences] = useState<Experience[]>([
-    {
-      title: "Frontend Developer",
-      company: "Tech Corp",
-      description: "Built responsive web applications using React and TypeScript",
-      startYear: 2022,
-      endYear: 2024,
-    },
-  ])
+  // const [experiences, setExperiences] = useState<Experience[]>([
+  //   {
+  //     title: "Frontend Developer",
+  //     company: "Tech Corp",
+  //     description: "Built responsive web applications using React and TypeScript",
+  //     startYear: 2022,
+  //     endYear: 2024,
+  //   },
+  // ])
+
+  const [profile, setProfile] = useState<Member>();
+  const [educations, setEducations] = useState<Education[]>([]);
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // current user
+  const currentUser = useCurrentUser();
+  const currentUserID = currentUser?.memberID;
+    
+  const router = useRouter();
+    
+  const fetchBulletin = async () => {
+          try {
+            setLoading(true);
+            setError(null);
+  
+            const res = await getMemberById(currentUserID);
+
+            console.log("my profile res data",res.data)
+            setProfile(res.data); 
+            setEducations(res.data.education);
+            setExperiences(res.data.experience);
+          } catch (err: any) {
+            setError(err.response?.data?.message || "Failed to fetch member");
+            console.log(err);
+          } finally {
+            setLoading(false);
+          }
+    };
+  
+ useEffect(() => {
+      fetchBulletin();
+  }, [currentUserID]); 
 
   const [skillInput, setSkillInput] = useState("")
 
-  const handleSave = () => {
-    /* TODO: plug backend */
-    setIsEditing(false)
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const payload = {
+      ...profile,
+      experience: experiences,
+      education: educations
+    }
+
+    console.log("save editing profile payload", payload);
+
+    try {
+      const res = await updateMember(currentUserID, payload);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to update my profile");
+      console.log(err);
+    } finally {
+       setIsEditing(false)
+     }
+
+    
   }
 
   const addEducation = () => {
@@ -105,16 +146,29 @@ export function MyProfileForm() {
     setExperiences(updated)
   }
 
-  const addSkill = () => {
-    if (skillInput.trim() && !profile.skills.includes(skillInput.trim())) {
-      setProfile({ ...profile, skills: [...profile.skills, skillInput.trim()] })
-      setSkillInput("")
-    }
+ const addSkill = () => {
+  if (!profile) return;
+
+  const trimmedSkill = skillInput.trim();
+  if (trimmedSkill && !(profile.skills || []).includes(trimmedSkill)) {
+    setProfile({
+      ...profile,
+      skills: [...(profile.skills || []), trimmedSkill],
+    });
+    setSkillInput("");
   }
+};
+
 
   const removeSkill = (skill: string) => {
-    setProfile({ ...profile, skills: profile.skills.filter((s) => s !== skill) })
+    if (!profile) return;
+    setProfile({ ...profile, skills: profile?.skills?.filter((s) => s !== skill) })
   }
+
+const updateProfile = (updates: Partial<Member>) => {
+  if (!profile) return;
+  setProfile({ ...profile, ...updates });
+};
 
   return (
     <Card>
@@ -135,15 +189,15 @@ export function MyProfileForm() {
         {/* Avatar */}
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={profile.avatar || "/placeholder.svg"} alt={profile.name} />
-              <AvatarFallback>
-                {profile.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
+            <Avatar className="h-12 w-12">
+                        <AvatarImage
+                          src={profile?.profileImage || "/user-placeholder.svg"}
+                          alt={profile?.username}
+                        />
+                        <AvatarFallback>
+                          {`${profile?.firstName?.[0] ?? ""}${profile?.lastName?.[0] ?? ""}`}
+                        </AvatarFallback>
+                      </Avatar>
             {isEditing && (
               <button className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90">
                 <Camera className="h-4 w-4" />
@@ -157,13 +211,31 @@ export function MyProfileForm() {
           )}
         </div>
 
-        {/* Name */}
+      {/* First Name */}
         <div className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
+          <Label htmlFor="firstName">First Name</Label>
           {isEditing ? (
-            <Input id="name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
+            <Input
+              id="firstName"
+              value={profile?.firstName || ""}
+              onChange={(e) => updateProfile({ firstName: e.target.value })}
+            />
           ) : (
-            <p className="text-foreground">{profile.name}</p>
+            <p className="text-foreground">{profile?.firstName}</p>
+          )}
+        </div>
+
+        {/* Last Name */}
+        <div className="space-y-2">
+          <Label htmlFor="lastName">Last Name</Label>
+          {isEditing ? (
+            <Input
+              id="lastName"
+              value={profile?.lastName || ""}
+              onChange={(e) => updateProfile({ lastName: e.target.value })}
+            />
+          ) : (
+            <p className="text-foreground">{profile?.lastName}</p>
           )}
         </div>
 
@@ -174,11 +246,11 @@ export function MyProfileForm() {
             <Input
               id="email"
               type="email"
-              value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+              value={profile?.email || ""}
+              onChange={(e) => updateProfile({ email: e.target.value })}
             />
           ) : (
-            <p className="text-foreground">{profile.email}</p>
+            <p className="text-foreground">{profile?.email}</p>
           )}
         </div>
 
@@ -188,70 +260,70 @@ export function MyProfileForm() {
           {isEditing ? (
             <Textarea
               id="bio"
-              value={profile.bio}
-              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+              value={profile?.bio || ""}
+              onChange={(e) => updateProfile({ bio: e.target.value })}
               placeholder="Tell us about yourself..."
               rows={4}
             />
           ) : (
-            <p className="text-foreground">{profile.bio}</p>
+            <p className="text-foreground">{profile?.bio}</p>
           )}
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Social Links</h3>
-
-          <div className="space-y-2">
-            <Label htmlFor="github">
-              <Github className="h-4 w-4 inline mr-2" />
-              GitHub
-            </Label>
-            {isEditing ? (
-              <Input
-                id="github"
-                value={profile.github}
-                onChange={(e) => setProfile({ ...profile, github: e.target.value })}
-                placeholder="https://github.com/username"
-              />
-            ) : (
-              <p className="text-foreground">{profile.github}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="linkedin">
-              <Linkedin className="h-4 w-4 inline mr-2" />
-              LinkedIn
-            </Label>
-            {isEditing ? (
-              <Input
-                id="linkedin"
-                value={profile.linkedin}
-                onChange={(e) => setProfile({ ...profile, linkedin: e.target.value })}
-                placeholder="https://linkedin.com/in/username"
-              />
-            ) : (
-              <p className="text-foreground">{profile.linkedin}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="website">
-              <Globe className="h-4 w-4 inline mr-2" />
-              Personal Website
-            </Label>
-            {isEditing ? (
-              <Input
-                id="website"
-                value={profile.website}
-                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-                placeholder="https://yourwebsite.com"
-              />
-            ) : (
-              <p className="text-foreground">{profile.website}</p>
-            )}
-          </div>
+        {/* GitHub */}
+        <div className="space-y-2">
+          <Label htmlFor="github">
+            <Github className="h-4 w-4 inline mr-2" />
+            GitHub
+          </Label>
+          {isEditing ? (
+            <Input
+              id="github"
+              value={profile?.github || ""}
+              onChange={(e) => updateProfile({ github: e.target.value })}
+              placeholder="https://github.com/username"
+            />
+          ) : (
+            <p className="text-foreground">{profile?.github}</p>
+          )}
         </div>
+
+        {/* LinkedIn */}
+        <div className="space-y-2">
+          <Label htmlFor="linkedin">
+            <Linkedin className="h-4 w-4 inline mr-2" />
+            LinkedIn
+          </Label>
+          {isEditing ? (
+            <Input
+              id="linkedin"
+              value={profile?.linkedIn || ""}
+              onChange={(e) => updateProfile({ linkedIn: e.target.value })}
+              placeholder="https://linkedin.com/in/username"
+            />
+          ) : (
+            <p className="text-foreground">{profile?.linkedIn}</p>
+          )}
+        </div>
+
+        {/* Website */}
+        <div className="space-y-2">
+          <Label htmlFor="website">
+            <Globe className="h-4 w-4 inline mr-2" />
+            Personal Website
+          </Label>
+          {isEditing ? (
+            <Input
+              id="website"
+              value={profile?.website || ""}
+              onChange={(e) => updateProfile({ website: e.target.value })}
+              placeholder="https://yourwebsite.com"
+            />
+          ) : (
+            <p className="text-foreground">{profile?.website}</p>
+          )}
+        </div>
+
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -435,7 +507,7 @@ export function MyProfileForm() {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Skills</h3>
           <div className="flex flex-wrap gap-2">
-            {profile.skills.map((skill) => (
+            {profile?.skills?.map((skill) => (
               <div
                 key={skill}
                 className="flex items-center gap-1 px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
