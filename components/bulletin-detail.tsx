@@ -1,18 +1,26 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { ArrowLeft, Calendar, Clock, UsersIcon, Trash2, Edit } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import Image from "next/image"
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  UsersIcon,
+  Trash2,
+  Edit,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Bulletin } from "@/types/bulletin";
 import { useRouter } from "next/navigation";
-import { getBulletinById, deleteBulletin } from "@/api/bulletin"
+import { getBulletinById, deleteBulletin } from "@/api/bulletin";
 import { getTagColor, getTagName } from "@/utils/tagMap";
-import { getGroupById } from "@/api/group"
-import { useCurrentUser } from "@/hooks/useCurrentUser"
+import { getGroupById } from "@/api/group";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { normalizeImageUrl } from "@/utils/normalizeImageUrl";
 
 export function BulletinDetail({ id }: { id: string }) {
   const [bulletin, setBulletin] = useState<Bulletin | null>(null);
@@ -22,62 +30,64 @@ export function BulletinDetail({ id }: { id: string }) {
   const [groups, setGroups] = useState<any[]>([]);
   const currentUser = useCurrentUser();
   const currentUserID = currentUser?.memberID;
-  
+
   const router = useRouter();
-  
+
   const fetchBulletin = async () => {
-        try {
-          setLoading(true);
-          setError(null);
+    try {
+      setLoading(true);
+      setError(null);
 
-          const res = await getBulletinById(id);
-          setBulletin(res.data); 
-        } catch (err: any) {
-          setError(err.response?.data?.message || "Failed to fetch bulletin");
-          console.log(err);
-        } finally {
-          setLoading(false);
-        }
+      const res = await getBulletinById(id);
+      setBulletin(res.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch bulletin");
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
   };
-  
-  const fetchGroups = async () => {
-      if (!bulletin?.groupID) return;
 
-      const groupData = await Promise.all(
-        bulletin.groupID.map((id) => getGroupById(id))
-      );
-      setGroups(groupData);
+  const fetchGroups = async () => {
+    if (!bulletin?.groupID) return;
+
+    const groupData = await Promise.all(
+      bulletin.groupID.map((id) => getGroupById(id))
+    );
+    setGroups(groupData);
   };
 
   useEffect(() => {
-      fetchBulletin();
-  }, [id]); 
+    fetchBulletin();
+  }, [id]);
 
-  useEffect(()=> {
-    if(bulletin?.groupID){
-    fetchGroups();
+  useEffect(() => {
+    if (bulletin?.groupID) {
+      fetchGroups();
     }
-  }, [bulletin?.groupID])
-  
+  }, [bulletin?.groupID]);
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
-  const isAuthor = bulletin?.authorID === currentUserID
+  const isAuthor = bulletin?.authorID === currentUserID;
 
   const handleDelete = async () => {
-  if (!bulletin) return;
+    if (!bulletin) return;
 
-  try {
-    const confirmed = window.confirm("Are you sure you want to delete this bulletin?");
-    if (!confirmed) return;
+    try {
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this bulletin?"
+      );
+      if (!confirmed) return;
 
-    await deleteBulletin(id);
+      await deleteBulletin(id);
 
-    router.push("/bulletin");
-  } catch (err: any) {
-    console.error("Failed to delete bulletin:", err);
-    alert(err.response?.data?.message || "Failed to delete bulletin");
-  }
+      router.push("/bulletin");
+    } catch (err: any) {
+      console.error("Failed to delete bulletin:", err);
+      alert(err.response?.data?.message || "Failed to delete bulletin");
+    }
   };
 
   return (
@@ -98,7 +108,11 @@ export function BulletinDetail({ id }: { id: string }) {
                 Edit
               </Button>
             </Link>
-            <Button variant="destructive" onClick={handleDelete} className="gap-2">
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              className="gap-2"
+            >
               <Trash2 className="h-4 w-4" />
               Delete
             </Button>
@@ -108,22 +122,33 @@ export function BulletinDetail({ id }: { id: string }) {
 
       {/* Poster Image */}
       <div className="relative w-full h-96 rounded-lg overflow-hidden bg-muted">
-        <Image src={bulletin?.image || "/placeholder.svg"} alt={bulletin?.title || "placeholder" } fill className="object-cover" />
+        <Image
+          src={normalizeImageUrl(bulletin?.image)}
+          alt={bulletin?.title || "placeholder"}
+          fill
+          className="object-cover"
+        />
       </div>
 
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">{bulletin?.title}</h1>
-              <div className="flex items-center gap-2 pt-2">
-                    {bulletin?.tags.map((tag)=>(
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          <div className={`h-2 w-2 rounded-full ${getTagColor(tag)} mr-1.5`} />
-                          {getTagName(tag)}
-                      </Badge>
-                    ))}
-                </div>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">
+              {bulletin?.title}
+            </h1>
+            <div className="flex items-center gap-2 pt-2">
+              {bulletin?.tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  <div
+                    className={`h-2 w-2 rounded-full ${getTagColor(
+                      tag
+                    )} mr-1.5`}
+                  />
+                  {getTagName(tag)}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -142,7 +167,9 @@ export function BulletinDetail({ id }: { id: string }) {
           <CardTitle>About This Event</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground leading-relaxed">{bulletin?.description}</p>
+          <p className="text-muted-foreground leading-relaxed">
+            {bulletin?.description}
+          </p>
         </CardContent>
       </Card>
 
@@ -153,7 +180,6 @@ export function BulletinDetail({ id }: { id: string }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-
             {groups.length === 0 && (
               <p className="text-muted-foreground leading-relaxed">
                 No related collaboration groups
@@ -178,11 +204,16 @@ export function BulletinDetail({ id }: { id: string }) {
                 }
 
                 return (
-                  <Link key={group.data.groupID} href={`/collab-group/${group.data.groupID}`}>
+                  <Link
+                    key={group.data.groupID}
+                    href={`/collab-group/${group.data.groupID}`}
+                  >
                     <div className="flex items-center justify-between p-4 rounded-lg hover:bg-accent transition-colors cursor-pointer border border-border">
                       <div className="flex items-center gap-3">
                         <UsersIcon className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium text-foreground">{group.data.title}</span>
+                        <span className="font-medium text-foreground">
+                          {group.data.title}
+                        </span>
                       </div>
                       <Button variant="outline" size="sm">
                         View Group
@@ -191,11 +222,9 @@ export function BulletinDetail({ id }: { id: string }) {
                   </Link>
                 );
               })}
-
           </div>
         </CardContent>
-
       </Card>
     </div>
-  )
+  );
 }
