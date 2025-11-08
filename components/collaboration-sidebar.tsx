@@ -43,7 +43,7 @@ export function CollaborationSidebar() {
               <Users className="h-5 w-5 text-sidebar-primary-foreground" />
             </div>
             <div className="flex-1">
-              <h2 className="text-sm font-semibold text-sidebar-foreground">Workspace</h2>
+              <h2 className="text-sm font-semibold text-sidebar-foreground">TeamUp!</h2>
               <p className="text-xs text-muted-foreground">Team Collaboration</p>
             </div>
           </div>
