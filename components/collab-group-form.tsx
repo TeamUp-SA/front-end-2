@@ -130,8 +130,8 @@ export function CollabGroupForm({ mode, groupId }: CollabGroupFormProps) {
        }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
+//   if (loading) return <p>Loading...</p>;
+//   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

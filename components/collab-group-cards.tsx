@@ -46,8 +46,7 @@ export function CollabGroupCards() {
     fetchGroups();
   }, []); 
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
+ 
 
   const handleCreateGroup = () => {
     /* TODO: plug backend */
@@ -79,6 +78,9 @@ export function CollabGroupCards() {
     if (!group) return false
     return group.members.includes(currentUserID);
   }
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <div className="space-y-6">

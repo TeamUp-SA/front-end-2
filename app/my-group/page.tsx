@@ -1,7 +1,7 @@
 import { CollaborationSidebar } from "@/components/collaboration-sidebar"
-import { MyTeamsCards } from "@/components/my-teams-cards"
+import { MyGroupsCards } from "@/components/my-groups-cards"
 
-export default function MyTeamsPage() {
+export default function MyGroupsPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <CollaborationSidebar />
@@ -11,7 +11,7 @@ export default function MyTeamsPage() {
             <h1 className="text-3xl font-bold tracking-tight text-foreground">My Teams</h1>
             <p className="text-muted-foreground mt-2">Collaboration groups you've joined</p>
           </div>
-          <MyTeamsCards />
+          <MyGroupsCards />
         </div>
       </main>
     </div>
