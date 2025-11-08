@@ -9,29 +9,29 @@ export const getGroups = async () => {
 
 // GET /group/{group_id} - fetch single group by ID
 export const getGroupById = async (id: string) => {
-   try {
+  try {
     const res = await axios.get(`/group/${id}`);
     return res.data;
   } catch (err) {
     console.error(`Failed to fetch group ${id}:`, err);
-    return null; // 
+    return null; //
   }
 };
 
 // GET /group/owner/{owner_id} - fetch groups by owner
 export const getGroupsByOwnerId = async (ownerId: string) => {
-   try {
+  try {
     const res = await axios.get(`/group/owner/${ownerId}`);
     return res.data;
   } catch (err) {
     console.error(`Failed to fetch group by owner ${ownerId}:`, err);
-    return null; 
+    return null;
   }
 };
 
-// POST /group/ - create a new group
+// POST /group - create a new group
 export const createGroup = async (payload: GroupCreateRequest) => {
-  const res = await axios.post("/group/", payload);
+  const res = await axios.post("/group", payload);
   return res.data;
 };
 
