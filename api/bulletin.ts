@@ -1,6 +1,8 @@
 import { BulletinCreateRequest, BulletinUpdateRequest } from "@/types/bulletin";
 import axios from "./axiosInstance";
 
+const multipartHeaders = { "Content-Type": "multipart/form-data" };
+
 // GET /bulletin/
 export const getBulletins = async () => {
   const res = await axios.get("/bulletin/");
@@ -36,7 +38,21 @@ export const getBulletinsByGroup = async (groupId: string) => {
 };
 
 // POST /bulletin/
-export const createBulletin = async (payload: BulletinCreateRequest) => {
+export const createBulletin = async (
+  payload: BulletinCreateRequest,
+  imageFile?: File
+) => {
+  if (imageFile) {
+    const formData = new FormData();
+    formData.append("bulletin", JSON.stringify(payload));
+    formData.append("image", imageFile);
+
+    const res = await axios.post("/bulletin/", formData, {
+      headers: multipartHeaders,
+    });
+    return res.data;
+  }
+
   const res = await axios.post("/bulletin/", payload);
   return res.data;
 };
@@ -44,8 +60,20 @@ export const createBulletin = async (payload: BulletinCreateRequest) => {
 // PUT /bulletin/{bulletin_id}
 export const updateBulletin = async (
   id: string,
-  payload: BulletinUpdateRequest
+  payload: BulletinUpdateRequest,
+  imageFile?: File
 ) => {
+  if (imageFile) {
+    const formData = new FormData();
+    formData.append("bulletin", JSON.stringify(payload));
+    formData.append("image", imageFile);
+
+    const res = await axios.put(`/bulletin/${id}`, formData, {
+      headers: multipartHeaders,
+    });
+    return res.data;
+  }
+
   const res = await axios.put(`/bulletin/${id}`, payload);
   return res.data;
 };

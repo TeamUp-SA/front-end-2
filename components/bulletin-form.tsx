@@ -2,7 +2,8 @@
 
 import type React from "react";
 
-import { useState, useEffect } from "react";
+import type { ChangeEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, X, Upload } from "lucide-react";
@@ -12,8 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Bulletin } from "@/types/bulletin";
-import { getBulletinById } from "@/api/bulletin";
+import {
+  Bulletin,
+  BulletinCreateRequest,
+  BulletinUpdateRequest,
+} from "@/types/bulletin";
+import {
+  getBulletinById,
+  updateBulletin,
+  createBulletin,
+} from "@/api/bulletin";
 import {
   Select,
   SelectContent,
@@ -24,7 +33,6 @@ import {
 import { tagNameMap } from "@/utils/tagMap";
 import { Group } from "@/types/group";
 import { getGroups } from "@/api/group";
-import { updateBulletin, createBulletin } from "@/api/bulletin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface BulletinFormProps {
@@ -52,8 +60,13 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
   const [image, setImage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
   const [tags, setTags] = useState<number[]>([]);
   const [groupIDs, setGroupIDs] = useState<string[]>([]); // existing groupIDs bind to this bulletin
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchBulletin = async () => {
     try {
@@ -101,8 +114,16 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
       setImage(bulletin.image);
       setTags(bulletin.tags);
       setGroupIDs(bulletin.groupID);
+      setImagePreview(bulletin.image ?? "");
+      setImageFile(null);
     }
   }, [bulletin, mode]);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(image);
+    }
+  }, [image, imageFile]);
 
   // Add tag by dropdown selection
   const handleAddTag = (selectedTag: number) => {
@@ -134,32 +155,63 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload = {
+    if (!image && !imageFile) {
+      setFormError("Please provide an image URL or upload a file.");
+      return;
+    }
+
+    setFormError(null);
+
+    const basePayload = {
       title,
       description,
       groupID: groupIDs,
       date,
-      image,
       tags,
     };
 
     try {
       let response;
 
-      console.log("payload", payload);
-
       switch (mode) {
-        case "create":
-          response = await createBulletin({
-            ...payload,
+        case "create": {
+          if (!currentUserID) {
+            setFormError("Current user information is missing.");
+            return;
+          }
+          const createPayload: BulletinCreateRequest = {
+            ...basePayload,
             authorID: currentUserID,
-          });
-          break;
+          };
 
-        case "edit":
-          if (!bulletinId) throw new Error("No bulletin ID for edit mode");
-          response = await updateBulletin(bulletinId, payload);
+          if (!imageFile && image) {
+            createPayload.image = image;
+          }
+
+          response = await createBulletin(
+            createPayload,
+            imageFile ?? undefined
+          );
           break;
+        }
+
+        case "edit": {
+          if (!bulletinId) throw new Error("No bulletin ID for edit mode");
+          const updatePayload: BulletinUpdateRequest = {
+            ...basePayload,
+          };
+
+          if (!imageFile && image) {
+            updatePayload.image = image;
+          }
+
+          response = await updateBulletin(
+            bulletinId,
+            updatePayload,
+            imageFile ?? undefined
+          );
+          break;
+        }
 
         default:
           throw new Error("Invalid mode");
@@ -167,6 +219,7 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
 
       console.log("Submission successful:", response);
       router.push("/bulletin");
+      setImageFile(null);
     } catch (err: any) {
       console.error(
         "Failed to submit bulletin:",
@@ -236,27 +289,66 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
 
             {/* Image URL */}
             <div className="space-y-2">
-              <Label htmlFor="image">Poster Image URL *</Label>
+              <Label htmlFor="image">Poster Image *</Label>
               <div className="flex gap-2">
                 <Input
                   id="image"
                   value={image}
-                  onChange={(e) => setImage(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setImage(value);
+                    setFormError(null);
+                    if (imageFile) {
+                      setImageFile(null);
+                    }
+                    setImagePreview(value);
+                  }}
                   placeholder="Enter image URL or upload"
-                  required
+                  required={!imageFile}
                 />
-                <Button type="button" variant="outline" size="icon">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <Upload className="h-4 w-4" />
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    setImageFile(file);
+                    setFormError(null);
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      const result = reader.result as string;
+                      setImagePreview(result);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
               </div>
-              {image && (
+              {(imagePreview || image) && (
                 <div className="mt-2 relative w-full h-48 rounded-lg overflow-hidden bg-muted">
                   <img
-                    src={image || "/placeholder.svg"}
+                    src={imagePreview || image || "/placeholder.svg"}
                     alt="Preview"
                     className="object-cover w-full h-full"
                   />
                 </div>
+              )}
+              {imageFile && (
+                <p className="text-xs text-muted-foreground">
+                  {imageFile.name}
+                </p>
+              )}
+              {formError && (
+                <p className="text-sm text-destructive">{formError}</p>
               )}
             </div>
 

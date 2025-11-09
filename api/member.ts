@@ -1,6 +1,8 @@
 import axios from "./axiosInstance";
 import { MemberRegisterRequest, MemberUpdateRequest } from "@/types/member";
 
+const multipartHeaders = { "Content-Type": "multipart/form-data" };
+
 // GET /member/ - fetch all members
 export const getMembers = async () => {
   const res = await axios.get("/member/");
@@ -14,7 +16,7 @@ export const getMemberById = async (id: string) => {
     return res.data;
   } catch (err) {
     // console.error(`"❌ member fetch failed but handled" ${id}:`, err);
-    return null; 
+    return null;
   }
 };
 
@@ -25,7 +27,22 @@ export const createMember = async (payload: MemberRegisterRequest) => {
 };
 
 // PUT /member/{member_id} - update a member
-export const updateMember = async (id: string, payload: MemberUpdateRequest) => {
+export const updateMember = async (
+  id: string,
+  payload: MemberUpdateRequest,
+  imageFile?: File
+) => {
+  if (imageFile) {
+    const formData = new FormData();
+    formData.append("member", JSON.stringify(payload));
+    formData.append("image", imageFile);
+
+    const res = await axios.put(`/member/${id}`, formData, {
+      headers: multipartHeaders,
+    });
+    return res.data;
+  }
+
   const res = await axios.put(`/member/${id}`, payload);
   return res.data;
 };

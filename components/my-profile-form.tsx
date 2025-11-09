@@ -1,96 +1,150 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Camera, Plus, Trash2, Github, Linkedin, Globe } from "lucide-react"
-import { Member, Education, Experience } from "@/types/member"
-import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import { useCurrentUser } from "@/hooks/useCurrentUser"
-import { getMemberById, updateMember } from "@/api/member"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Camera, Plus, Trash2, Github, Linkedin, Globe } from "lucide-react";
+import {
+  Member,
+  Education,
+  Experience,
+  MemberUpdateRequest,
+} from "@/types/member";
+import { useRouter } from "next/navigation";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { getMemberById, updateMember } from "@/api/member";
 
 export function MyProfileForm() {
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState<Member>();
   const [educations, setEducations] = useState<Education[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // current user
   const currentUser = useCurrentUser();
   const currentUserID = currentUser?.memberID;
-    
+
   const router = useRouter();
-    
+
   const fetchBulletin = async () => {
-          try {
-            setLoading(true);
-            setError(null);
-  
-            const res = await getMemberById(currentUserID);
+    if (!currentUserID) {
+      setLoading(false);
+      return;
+    }
 
-            console.log("my profile res data",res.data)
-            setProfile(res.data); 
-            setEducations(res.data.education);
-            setExperiences(res.data.experience);
-          } catch (err: any) {
-            setError(err.response?.data?.message || "Failed to fetch member");
-            console.log(err);
-          } finally {
-            setLoading(false);
-          }
-    };
-  
- useEffect(() => {
-      fetchBulletin();
-  }, [currentUserID]); 
+    try {
+      setLoading(true);
+      setError(null);
 
-  const [skillInput, setSkillInput] = useState("")
+      const res = await getMemberById(currentUserID);
+
+      console.log("my profile res data", res.data);
+      setProfile(res.data);
+      setEducations(res.data.education);
+      setExperiences(res.data.experience);
+      setImagePreview(res.data.profileImage ?? "");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch member");
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBulletin();
+  }, [currentUserID]);
+
+  const [skillInput, setSkillInput] = useState("");
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const payload = {
-      ...profile,
+    if (!currentUserID || !profile) return;
+
+    const payload: MemberUpdateRequest = {
+      username: profile?.username,
+      password: profile?.password,
+      firstName: profile?.firstName,
+      lastName: profile?.lastName,
+      email: profile?.email,
+      phoneNumber: profile?.phoneNumber,
+      bio: profile?.bio,
+      skills: profile?.skills ?? [],
+      linkedIn: profile?.linkedIn,
+      github: profile?.github,
+      website: profile?.website,
+      profileImage: profile?.profileImage,
       experience: experiences,
-      education: educations
+      education: educations,
+    };
+
+    if (selectedImageFile) {
+      delete (payload as Partial<MemberUpdateRequest>).profileImage;
     }
 
     console.log("save editing profile payload", payload);
 
     try {
-      const res = await updateMember(currentUserID, payload);
+      const res = await updateMember(
+        currentUserID,
+        payload,
+        selectedImageFile ?? undefined
+      );
+      const updated = res?.data;
+      if (updated) {
+        setProfile(updated);
+        setEducations(updated.education ?? []);
+        setExperiences(updated.experience ?? []);
+        setImagePreview(updated.profileImage ?? "");
+      } else {
+        await fetchBulletin();
+      }
+      setSelectedImageFile(null);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to update my profile");
       console.log(err);
     } finally {
-       setIsEditing(false)
-     }
-
-    
-  }
+      setIsEditing(false);
+    }
+  };
 
   const addEducation = () => {
     setEducations([
       ...educations,
-      { school: "", degree: "", field: "", startYear: new Date().getFullYear(), endYear: new Date().getFullYear() },
-    ])
-  }
+      {
+        school: "",
+        degree: "",
+        field: "",
+        startYear: new Date().getFullYear(),
+        endYear: new Date().getFullYear(),
+      },
+    ]);
+  };
 
   const removeEducation = (index: number) => {
-    setEducations(educations.filter((_, i) => i !== index))
-  }
+    setEducations(educations.filter((_, i) => i !== index));
+  };
 
-  const updateEducation = (index: number, field: keyof Education, value: string | number) => {
-    const updated = [...educations]
-    updated[index] = { ...updated[index], [field]: value }
-    setEducations(updated)
-  }
+  const updateEducation = (
+    index: number,
+    field: keyof Education,
+    value: string | number
+  ) => {
+    const updated = [...educations];
+    updated[index] = { ...updated[index], [field]: value };
+    setEducations(updated);
+  };
 
   const addExperience = () => {
     setExperiences([
@@ -102,42 +156,74 @@ export function MyProfileForm() {
         startYear: new Date().getFullYear(),
         endYear: new Date().getFullYear(),
       },
-    ])
-  }
+    ]);
+  };
 
   const removeExperience = (index: number) => {
-    setExperiences(experiences.filter((_, i) => i !== index))
-  }
+    setExperiences(experiences.filter((_, i) => i !== index));
+  };
 
-  const updateExperience = (index: number, field: keyof Experience, value: string | number) => {
-    const updated = [...experiences]
-    updated[index] = { ...updated[index], [field]: value }
-    setExperiences(updated)
-  }
+  const updateExperience = (
+    index: number,
+    field: keyof Experience,
+    value: string | number
+  ) => {
+    const updated = [...experiences];
+    updated[index] = { ...updated[index], [field]: value };
+    setExperiences(updated);
+  };
 
- const addSkill = () => {
-  if (!profile) return;
+  const addSkill = () => {
+    if (!profile) return;
 
-  const trimmedSkill = skillInput.trim();
-  if (trimmedSkill && !(profile.skills || []).includes(trimmedSkill)) {
-    setProfile({
-      ...profile,
-      skills: [...(profile.skills || []), trimmedSkill],
-    });
-    setSkillInput("");
-  }
-};
-
+    const trimmedSkill = skillInput.trim();
+    if (trimmedSkill && !(profile.skills || []).includes(trimmedSkill)) {
+      setProfile({
+        ...profile,
+        skills: [...(profile.skills || []), trimmedSkill],
+      });
+      setSkillInput("");
+    }
+  };
 
   const removeSkill = (skill: string) => {
     if (!profile) return;
-    setProfile({ ...profile, skills: profile?.skills?.filter((s) => s !== skill) })
-  }
+    setProfile({
+      ...profile,
+      skills: profile?.skills?.filter((s) => s !== skill),
+    });
+  };
 
-const updateProfile = (updates: Partial<Member>) => {
-  if (!profile) return;
-  setProfile({ ...profile, ...updates });
-};
+  const updateProfile = (updates: Partial<Member>) => {
+    if (!profile) return;
+    setProfile({ ...profile, ...updates });
+  };
+
+  const handleTriggerImageDialog = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setSelectedImageFile(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setImagePreview(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCancelEdit = () => {
+    setSelectedImageFile(null);
+    setImagePreview(profile?.profileImage ?? "");
+    setIsEditing(false);
+  };
 
   return (
     <Card>
@@ -147,7 +233,7 @@ const updateProfile = (updates: Partial<Member>) => {
           <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
         ) : (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
+            <Button variant="outline" onClick={handleCancelEdit}>
               Cancel
             </Button>
             <Button onClick={handleSave}>Save Changes</Button>
@@ -159,28 +245,50 @@ const updateProfile = (updates: Partial<Member>) => {
         <div className="flex items-center gap-4">
           <div className="relative">
             <Avatar className="h-12 w-12">
-                        <AvatarImage
-                          src={profile?.profileImage || "/user-placeholder.svg"}
-                          alt={profile?.username}
-                        />
-                        <AvatarFallback>
-                          {`${profile?.firstName?.[0] ?? ""}${profile?.lastName?.[0] ?? ""}`}
-                        </AvatarFallback>
-                      </Avatar>
+              <AvatarImage
+                src={
+                  imagePreview ||
+                  profile?.profileImage ||
+                  "/user-placeholder.svg"
+                }
+                alt={profile?.username}
+              />
+              <AvatarFallback>
+                {`${profile?.firstName?.[0] ?? ""}${
+                  profile?.lastName?.[0] ?? ""
+                }`}
+              </AvatarFallback>
+            </Avatar>
             {isEditing && (
-              <button className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90">
-                <Camera className="h-4 w-4" />
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleTriggerImageDialog}
+                  className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+              </>
             )}
           </div>
           {isEditing && (
             <div className="text-sm text-muted-foreground">
               <p>Click the camera icon to change your profile picture</p>
+              {selectedImageFile && (
+                <p className="text-xs">{selectedImageFile.name}</p>
+              )}
             </div>
           )}
         </div>
 
-      {/* First Name */}
+        {/* First Name */}
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
           {isEditing ? (
@@ -293,7 +401,6 @@ const updateProfile = (updates: Partial<Member>) => {
           )}
         </div>
 
-
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Education</h3>
@@ -309,7 +416,11 @@ const updateProfile = (updates: Partial<Member>) => {
             <Card key={index} className="p-4">
               {isEditing && (
                 <div className="flex justify-end mb-2">
-                  <Button onClick={() => removeEducation(index)} size="sm" variant="ghost">
+                  <Button
+                    onClick={() => removeEducation(index)}
+                    size="sm"
+                    variant="ghost"
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -320,7 +431,9 @@ const updateProfile = (updates: Partial<Member>) => {
                   {isEditing ? (
                     <Input
                       value={edu.school}
-                      onChange={(e) => updateEducation(index, "school", e.target.value)}
+                      onChange={(e) =>
+                        updateEducation(index, "school", e.target.value)
+                      }
                       placeholder="e.g., MIT"
                     />
                   ) : (
@@ -333,7 +446,9 @@ const updateProfile = (updates: Partial<Member>) => {
                     {isEditing ? (
                       <Input
                         value={edu.degree}
-                        onChange={(e) => updateEducation(index, "degree", e.target.value)}
+                        onChange={(e) =>
+                          updateEducation(index, "degree", e.target.value)
+                        }
                         placeholder="e.g., Bachelor of Science"
                       />
                     ) : (
@@ -345,7 +460,9 @@ const updateProfile = (updates: Partial<Member>) => {
                     {isEditing ? (
                       <Input
                         value={edu.field}
-                        onChange={(e) => updateEducation(index, "field", e.target.value)}
+                        onChange={(e) =>
+                          updateEducation(index, "field", e.target.value)
+                        }
                         placeholder="e.g., Computer Science"
                       />
                     ) : (
@@ -360,7 +477,13 @@ const updateProfile = (updates: Partial<Member>) => {
                       <Input
                         type="number"
                         value={edu.startYear}
-                        onChange={(e) => updateEducation(index, "startYear", Number.parseInt(e.target.value))}
+                        onChange={(e) =>
+                          updateEducation(
+                            index,
+                            "startYear",
+                            Number.parseInt(e.target.value)
+                          )
+                        }
                       />
                     ) : (
                       <p className="text-foreground">{edu.startYear}</p>
@@ -372,7 +495,13 @@ const updateProfile = (updates: Partial<Member>) => {
                       <Input
                         type="number"
                         value={edu.endYear}
-                        onChange={(e) => updateEducation(index, "endYear", Number.parseInt(e.target.value))}
+                        onChange={(e) =>
+                          updateEducation(
+                            index,
+                            "endYear",
+                            Number.parseInt(e.target.value)
+                          )
+                        }
                       />
                     ) : (
                       <p className="text-foreground">{edu.endYear}</p>
@@ -399,7 +528,11 @@ const updateProfile = (updates: Partial<Member>) => {
             <Card key={index} className="p-4">
               {isEditing && (
                 <div className="flex justify-end mb-2">
-                  <Button onClick={() => removeExperience(index)} size="sm" variant="ghost">
+                  <Button
+                    onClick={() => removeExperience(index)}
+                    size="sm"
+                    variant="ghost"
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -410,7 +543,9 @@ const updateProfile = (updates: Partial<Member>) => {
                   {isEditing ? (
                     <Input
                       value={exp.title}
-                      onChange={(e) => updateExperience(index, "title", e.target.value)}
+                      onChange={(e) =>
+                        updateExperience(index, "title", e.target.value)
+                      }
                       placeholder="e.g., Frontend Developer"
                     />
                   ) : (
@@ -422,7 +557,9 @@ const updateProfile = (updates: Partial<Member>) => {
                   {isEditing ? (
                     <Input
                       value={exp.company}
-                      onChange={(e) => updateExperience(index, "company", e.target.value)}
+                      onChange={(e) =>
+                        updateExperience(index, "company", e.target.value)
+                      }
                       placeholder="e.g., Tech Corp"
                     />
                   ) : (
@@ -434,7 +571,9 @@ const updateProfile = (updates: Partial<Member>) => {
                   {isEditing ? (
                     <Textarea
                       value={exp.description}
-                      onChange={(e) => updateExperience(index, "description", e.target.value)}
+                      onChange={(e) =>
+                        updateExperience(index, "description", e.target.value)
+                      }
                       placeholder="Describe your role and achievements..."
                       rows={3}
                     />
@@ -449,7 +588,13 @@ const updateProfile = (updates: Partial<Member>) => {
                       <Input
                         type="number"
                         value={exp.startYear}
-                        onChange={(e) => updateExperience(index, "startYear", Number.parseInt(e.target.value))}
+                        onChange={(e) =>
+                          updateExperience(
+                            index,
+                            "startYear",
+                            Number.parseInt(e.target.value)
+                          )
+                        }
                       />
                     ) : (
                       <p className="text-foreground">{exp.startYear}</p>
@@ -461,7 +606,13 @@ const updateProfile = (updates: Partial<Member>) => {
                       <Input
                         type="number"
                         value={exp.endYear}
-                        onChange={(e) => updateExperience(index, "endYear", Number.parseInt(e.target.value))}
+                        onChange={(e) =>
+                          updateExperience(
+                            index,
+                            "endYear",
+                            Number.parseInt(e.target.value)
+                          )
+                        }
                       />
                     ) : (
                       <p className="text-foreground">{exp.endYear}</p>
@@ -483,7 +634,10 @@ const updateProfile = (updates: Partial<Member>) => {
               >
                 <span>{skill}</span>
                 {isEditing && (
-                  <button onClick={() => removeSkill(skill)} className="ml-1 hover:text-destructive">
+                  <button
+                    onClick={() => removeSkill(skill)}
+                    className="ml-1 hover:text-destructive"
+                  >
                     <Trash2 className="h-3 w-3" />
                   </button>
                 )}
@@ -506,5 +660,5 @@ const updateProfile = (updates: Partial<Member>) => {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
