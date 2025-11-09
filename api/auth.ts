@@ -46,8 +46,13 @@ export const register = async <T = unknown>(
   return data;
 };
 
+export const logout = async () => {
+  const { data } = await axios.get("logout");
+  return data;
+};
+
 export const getGoogleAuthUrl = () => {
   const base = axios.defaults.baseURL ?? "";
   const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
-  return `${normalizedBase}/login/google`;
+  return `${normalizedBase}/login/google/`;
 };
