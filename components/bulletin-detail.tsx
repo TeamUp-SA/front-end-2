@@ -21,6 +21,7 @@ import { getTagColor, getTagName } from "@/utils/tagMap";
 import { getGroupById } from "@/api/group";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { normalizeImageUrl } from "@/utils/normalizeImageUrl";
+import { toast } from "sonner";
 
 export function BulletinDetail({ id }: { id: string }) {
   const [bulletin, setBulletin] = useState<Bulletin | null>(null);
@@ -74,6 +75,10 @@ export function BulletinDetail({ id }: { id: string }) {
 
   const handleDelete = async () => {
     if (!bulletin) return;
+    if (!currentUserID) {
+      toast.error("Unable to verify your account. Please sign in again.");
+      return;
+    }
 
     try {
       const confirmed = window.confirm(
@@ -81,12 +86,16 @@ export function BulletinDetail({ id }: { id: string }) {
       );
       if (!confirmed) return;
 
-      await deleteBulletin(id);
-
+      await deleteBulletin(id, currentUserID);
+      toast.success("Bulletin deleted successfully.");
       router.push("/bulletin");
     } catch (err: any) {
       console.error("Failed to delete bulletin:", err);
-      alert(err.response?.data?.message || "Failed to delete bulletin");
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Failed to delete bulletin";
+      toast.error(message);
     }
   };
 

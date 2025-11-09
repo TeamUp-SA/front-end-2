@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Users } from "lucide-react";
 import { getGoogleAuthUrl, login } from "@/api/auth";
+import { getMembers } from "@/api/member";
+import type { Member } from "@/types/member";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -43,7 +45,40 @@ export function LoginForm() {
     setError(null);
 
     try {
-      await login({ email: email.trim(), password });
+      const normalizedEmail = email.trim().toLowerCase();
+      await login({ email: normalizedEmail, password });
+      if (typeof window !== "undefined") {
+        localStorage.setItem("currentUserEmail", normalizedEmail);
+        localStorage.removeItem("currentMemberID");
+
+        try {
+          const response = await getMembers();
+          const members =
+            response?.data ??
+            response?.data?.data ??
+            (Array.isArray(response) ? response : []);
+
+          if (Array.isArray(members)) {
+            const match = (members as Member[]).find(
+              (member) =>
+                member?.email?.toLowerCase() === normalizedEmail.toLowerCase()
+            );
+            if (match?.memberID) {
+              localStorage.setItem("currentMemberID", match.memberID);
+            }
+          } else if (Array.isArray((members as { data?: Member[] })?.data)) {
+            const match = (members.data as Member[]).find(
+              (member) =>
+                member?.email?.toLowerCase() === normalizedEmail.toLowerCase()
+            );
+            if (match?.memberID) {
+              localStorage.setItem("currentMemberID", match.memberID);
+            }
+          }
+        } catch (fetchErr) {
+          console.error("Failed to prefetch member profile", fetchErr);
+        }
+      }
       router.push("/");
     } catch (err: unknown) {
       const message =

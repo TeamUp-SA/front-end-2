@@ -40,20 +40,26 @@ export const getBulletinsByGroup = async (groupId: string) => {
 // POST /bulletin/
 export const createBulletin = async (
   payload: BulletinCreateRequest,
-  imageFile?: File
+  imageFile?: File,
+  memberID?: string
 ) => {
   if (imageFile) {
     const formData = new FormData();
     formData.append("bulletin", JSON.stringify(payload));
     formData.append("image", imageFile);
 
-    const res = await axios.post("/bulletin/", formData, {
-      headers: multipartHeaders,
+    const res = await axios.post("/bulletin", formData, {
+      headers: {
+        ...multipartHeaders,
+        ...(memberID ? { "X-Member-ID": memberID } : undefined),
+      },
     });
     return res.data;
   }
 
-  const res = await axios.post("/bulletin/", payload);
+  const res = await axios.post("/bulletin", payload, {
+    headers: memberID ? { "X-Member-ID": memberID } : undefined,
+  });
   return res.data;
 };
 
@@ -61,7 +67,8 @@ export const createBulletin = async (
 export const updateBulletin = async (
   id: string,
   payload: BulletinUpdateRequest,
-  imageFile?: File
+  imageFile?: File,
+  memberID?: string
 ) => {
   if (imageFile) {
     const formData = new FormData();
@@ -69,17 +76,28 @@ export const updateBulletin = async (
     formData.append("image", imageFile);
 
     const res = await axios.put(`/bulletin/${id}`, formData, {
-      headers: multipartHeaders,
+      headers: {
+        ...multipartHeaders,
+        ...(memberID ? { "X-Member-ID": memberID } : undefined),
+      },
     });
     return res.data;
   }
 
-  const res = await axios.put(`/bulletin/${id}`, payload);
+  const res = await axios.put(`/bulletin/${id}`, payload, {
+    headers: memberID ? { "X-Member-ID": memberID } : undefined,
+  });
   return res.data;
 };
 
 // DELETE /bulletin/{bulletin_id}
-export const deleteBulletin = async (id: string) => {
-  const res = await axios.delete(`/bulletin/${id}`);
+export const deleteBulletin = async (id: string, memberID?: string) => {
+  const res = await axios.delete(`/bulletin/${id}`, {
+    headers: memberID
+      ? {
+          "X-Member-ID": memberID,
+        }
+      : undefined,
+  });
   return res.data;
 };

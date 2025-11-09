@@ -190,7 +190,8 @@ export function BulletinForm({ mode, bulletinId }: BulletinFormProps) {
 
           response = await createBulletin(
             createPayload,
-            imageFile ?? undefined
+            imageFile ?? undefined,
+            currentUserID
           );
           break;
         }

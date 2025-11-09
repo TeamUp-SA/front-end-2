@@ -50,8 +50,8 @@ export function MyProfileForm() {
 
       console.log("my profile res data", res.data);
       setProfile(res.data);
-      setEducations(res.data.education);
-      setExperiences(res.data.experience);
+      setEducations(res.data.education ?? []);
+      setExperiences(res.data.experience ?? []);
       setImagePreview(res.data.profileImage ?? "");
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to fetch member");

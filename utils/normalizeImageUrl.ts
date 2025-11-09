@@ -26,3 +26,4 @@ export function normalizeImageUrl(url: string | undefined | null): string {
 
   return `/${url}`;
 }
+

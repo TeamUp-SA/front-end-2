@@ -1,21 +1,29 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { ArrowLeft, Calendar, Clock, UsersIcon, GraduationCap, Edit, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useState, useEffect } from "react"
-import { Group } from "@/types/group"
-import { Member } from "@/types/member"
-import { useRouter } from "next/navigation"
-import { getMemberById } from "@/api/member"
-import { getGroupById, updateGroup, deleteGroup} from "@/api/group"
-import { getTagColor, getTagName } from "@/utils/tagMap"
-import { getRandomColor } from "@/utils/getRandomColor"
-import { useCurrentUser } from "@/hooks/useCurrentUser"
-
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  UsersIcon,
+  GraduationCap,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from "react";
+import { Group } from "@/types/group";
+import { Member } from "@/types/member";
+import { useRouter } from "next/navigation";
+import { getMemberById } from "@/api/member";
+import { getGroupById, updateGroup, deleteGroup } from "@/api/group";
+import { getTagColor, getTagName } from "@/utils/tagMap";
+import { getRandomColor } from "@/utils/getRandomColor";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { toast } from "sonner";
 
 export function CollabGroupDetail({ id }: { id: string }) {
   const [group, setGroup] = useState<Group | null>(null);
@@ -24,115 +32,147 @@ export function CollabGroupDetail({ id }: { id: string }) {
 
   // Group Member data array
   const [members, setMembers] = useState<any[]>([]);
-  
+
   const router = useRouter();
 
   // current user
   const currentUser = useCurrentUser();
   const currentUserID = currentUser?.memberID;
-  
+
   const fetchGroup = async () => {
-        try {
-          setLoading(true);
-          setError(null);
+    try {
+      setLoading(true);
+      setError(null);
 
-          const res = await getGroupById(id);
-          setGroup(res.data); 
-        } catch (err: any) {
-          setError(err.response?.data?.message || "Failed to fetch group");
-          console.log(err);
-        } finally {
-          setLoading(false);
-        }
+      const res = await getGroupById(id);
+      setGroup(res.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch group");
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
   };
-  
-  const fetchMembers = async () => {
-      if (!group?.members) return;
 
-      const memberData = await Promise.all(
-        group.members.map((id) => getMemberById(id))
-      );
-      console.log("memberData",memberData);
-      setMembers(memberData);
+  const fetchMembers = async () => {
+    if (!group?.members) return;
+
+    const memberData = await Promise.all(
+      group.members.map((id) => getMemberById(id))
+    );
+    console.log("memberData", memberData);
+    setMembers(memberData);
   };
 
   useEffect(() => {
-      fetchGroup();
-  }, [id]); 
+    fetchGroup();
+  }, [id]);
 
-  useEffect(()=> {
+  useEffect(() => {
     if (group?.members) {
-    fetchMembers();
-  }
-  }, [group?.members])
-  
+      fetchMembers();
+    }
+  }, [group?.members]);
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
-  const isOwner = group?.ownerID === currentUserID
+  const isOwner = group?.ownerID === currentUserID;
 
-  const isJoined = group?.members.includes(currentUserID)
-
+  const isJoined =
+    !!currentUserID &&
+    (group?.members ?? []).some((memberID) => memberID === currentUserID);
 
   const handleLeaveGroup = async (e: React.MouseEvent) => {
-        e.preventDefault() 
-        const payload = {
-              members: group?.members?.filter(id => id !== currentUserID) ?? []
-        };
-        console.log("leave group payload", payload, id)
-        console.log("id:", id, "length:", id.length, [...id]);
-        try {
-          const confirmed = window.confirm("Are you sure you want to leave this group?");
-          if (!confirmed) return;
+    e.preventDefault();
+    if (!currentUserID) {
+      toast.error("Unable to verify your account. Please sign in again.");
+      return;
+    }
 
-          const res = await updateGroup(id as string,payload);
-          console.log("leave group successful")
-          alert(`Successfully leave group ${group?.title}`);
+    const nextMembers = (group?.members ?? []).filter(
+      (memberID): memberID is string =>
+        Boolean(memberID) && memberID !== currentUserID
+    );
+    const payload = {
+      members: nextMembers,
+    };
+    console.log("leave group payload", payload, id);
+    console.log("id:", id, "length:", id.length, [...id]);
+    try {
+      const confirmed = window.confirm(
+        "Are you sure you want to leave this group?"
+      );
+      if (!confirmed) return;
 
-          router.push("/");
-        } catch (err: any) {
-          setError(err.response?.data?.message || "Failed to leave group");
-          console.log(err);
-          alert(`Failed to leave group ${group?.title}`);
-        }
-      
-      }
+      const res = await updateGroup(id as string, payload, currentUserID);
+      console.log("leave group successful");
+      toast.success(`You left ${group?.title ?? "the group"}.`);
+
+      router.push("/");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to leave group");
+      console.log(err);
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          `Failed to leave group ${group?.title ?? ""}`.trim()
+      );
+    }
+  };
 
   const handleJoinGroup = async (e: React.MouseEvent) => {
-      e.preventDefault() // Prevent navigation when clicking join button
-      /* TODO: plug backend */
-      const payload = {
-            members: [...(group?.members ?? []), currentUserID]
-       };
-      try {
-        const res = await updateGroup(id,payload);
-        console.log("add member successful")
-        alert(`Successfully join group ${group?.title}`);
-        await fetchGroup();
-
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to fetch groups");
-        console.log(err);
-        alert(`Failed to join group ${group?.title}`);
-      }
-    
+    e.preventDefault(); // Prevent navigation when clicking join button
+    if (!currentUserID) {
+      toast.error("Unable to verify your account. Please sign in again.");
+      return;
     }
+
+    const payload = {
+      members: [...(group?.members ?? []), currentUserID],
+    };
+    try {
+      const res = await updateGroup(id, payload, currentUserID);
+      console.log("add member successful");
+      toast.success(`Joined ${group?.title ?? "group"} successfully.`);
+      await fetchGroup();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch groups");
+      console.log(err);
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          `Failed to join group ${group?.title ?? ""}`.trim()
+      );
+    }
+  };
 
   const handleDelete = async () => {
     if (!group) return;
-  
+    if (!currentUserID) {
+      toast.error("Unable to verify your account. Please sign in again.");
+      return;
+    }
+
     try {
-      const confirmed = window.confirm("Are you sure you want to delete this group?");
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this group?"
+      );
       if (!confirmed) return;
-  
-      await deleteGroup(id);
-  
+
+      await deleteGroup(id, currentUserID);
+
+      toast.success("Group deleted successfully.");
       router.push("/");
     } catch (err: any) {
       console.error("Failed to delete group:", err);
-      alert(err.response?.data?.message || "Failed to delete group");
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Failed to delete group"
+      );
     }
-    };
+  };
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -148,14 +188,20 @@ export function CollabGroupDetail({ id }: { id: string }) {
       <div className="space-y-4">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">{group?.title}</h1>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">
+              {group?.title}
+            </h1>
             <div className="flex items-center gap-2 pt-2">
-                {group?.tags.map((tag)=>(
-                   <Badge key={tag} variant="secondary" className="text-xs">
-                       <div className={`h-2 w-2 rounded-full ${getTagColor(tag)} mr-1.5`} />
-                          {getTagName(tag)}
-                   </Badge>
-                ))}
+              {group?.tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  <div
+                    className={`h-2 w-2 rounded-full ${getTagColor(
+                      tag
+                    )} mr-1.5`}
+                  />
+                  {getTagName(tag)}
+                </Badge>
+              ))}
             </div>
           </div>
           <div className="flex gap-2">
@@ -167,7 +213,11 @@ export function CollabGroupDetail({ id }: { id: string }) {
                     Edit
                   </Button>
                 </Link>
-                <Button variant="destructive" onClick={handleDelete} className="gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  className="gap-2"
+                >
                   <Trash2 className="h-4 w-4" />
                   Delete
                 </Button>
@@ -175,20 +225,24 @@ export function CollabGroupDetail({ id }: { id: string }) {
             )}
             {/* {!isOwner && (
               <> */}
-                {isJoined ? (
-                  <Button size="lg" variant="destructive" onClick={handleLeaveGroup}>
-                    Leave Group
-                  </Button>
-                ) : (
-                  <Button
-                    size="lg"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={handleJoinGroup}
-                  >
-                    Join Group
-                  </Button>
-                )}
-              {/* </>
+            {isJoined ? (
+              <Button
+                size="lg"
+                variant="destructive"
+                onClick={handleLeaveGroup}
+              >
+                Leave Group
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={handleJoinGroup}
+              >
+                Join Group
+              </Button>
+            )}
+            {/* </>
             )} */}
           </div>
         </div>
@@ -201,7 +255,9 @@ export function CollabGroupDetail({ id }: { id: string }) {
           </div>
           <div className="flex items-center gap-2">
             <UsersIcon className="h-5 w-5" />
-            <span className="text-sm font-medium">{group?.members.length} Members</span>
+            <span className="text-sm font-medium">
+              {group?.members.length} Members
+            </span>
           </div>
         </div>
       </div>
@@ -212,7 +268,9 @@ export function CollabGroupDetail({ id }: { id: string }) {
           <CardTitle>About</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground leading-relaxed">{group?.description}</p>
+          <p className="text-muted-foreground leading-relaxed">
+            {group?.description}
+          </p>
         </CardContent>
       </Card>
 
@@ -225,7 +283,6 @@ export function CollabGroupDetail({ id }: { id: string }) {
           <div className="space-y-4">
             {members && members.length > 0 ? (
               members.map((member: any) => {
-                
                 // Case 1: Member that no data
                 if (!member) {
                   return (
@@ -254,7 +311,9 @@ export function CollabGroupDetail({ id }: { id: string }) {
                           alt={data.username}
                         />
                         <AvatarFallback>
-                          {`${data.firstName?.[0] ?? ""}${data.lastName?.[0] ?? ""}`}
+                          {`${data.firstName?.[0] ?? ""}${
+                            data.lastName?.[0] ?? ""
+                          }`}
                         </AvatarFallback>
                       </Avatar>
 
@@ -271,12 +330,14 @@ export function CollabGroupDetail({ id }: { id: string }) {
                               {data.education && data.education.length > 0 ? (
                                 (() => {
                                   const latestEdu = [...data.education].sort(
-                                    (a, b) => (b.endYear ?? 0) - (a.endYear ?? 0)
+                                    (a, b) =>
+                                      (b.endYear ?? 0) - (a.endYear ?? 0)
                                   )[0];
                                   return (
                                     <>
                                       <span className="text-foreground">
-                                        {latestEdu.degree ?? ""} {latestEdu.field ?? ""}
+                                        {latestEdu.degree ?? ""}{" "}
+                                        {latestEdu.field ?? ""}
                                       </span>{" "}
                                       <span className="text-muted-foreground/70">
                                         @ {latestEdu.school}
@@ -320,8 +381,7 @@ export function CollabGroupDetail({ id }: { id: string }) {
             )}
           </div>
         </CardContent>
-
       </Card>
     </div>
-  )
+  );
 }
