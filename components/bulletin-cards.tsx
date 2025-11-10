@@ -117,7 +117,7 @@ export function BulletinCards() {
                       <Badge key={tag} variant="secondary" className="text-xs">
                         <div
                           className={`h-2 w-2 rounded-full ${getTagColor(
-                            tag
+                            tag,
                           )} mr-1.5`}
                         />
                         {getTagName(tag)}
