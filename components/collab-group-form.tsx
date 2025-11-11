@@ -202,11 +202,16 @@ export function CollabGroupForm({ mode, groupId }: CollabGroupFormProps) {
                     <SelectValue placeholder="Select a tag" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(tagNameMap).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    {Object.entries(tagNameMap).map(([key, label]) => {
+                      const numKey = Number(key);
+                      if (isNaN(numKey)) return null;
+
+                      return (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

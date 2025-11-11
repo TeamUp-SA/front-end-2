@@ -1,9 +1,8 @@
 "use client";
 
-import type React from "react";
-
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { MoreVertical, Calendar, UsersIcon, Check } from "lucide-react";
+import { MoreVertical, Calendar, UsersIcon, Check, Search } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -13,35 +12,50 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Group } from "@/types/group";
-import { useState, useEffect } from "react";
 import { getGroups, updateGroup } from "@/api/group";
 import { getTagColor, getTagName } from "@/utils/tagMap";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { GroupSearchFilters } from "./group-search-filter";
+
+// Debounce hook
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+};
 
 export function CollabGroupCards() {
   const router = useRouter();
+  const currentUser = useCurrentUser();
+  const currentUserID = currentUser?.memberID;
+
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // current user
-  const currentUser = useCurrentUser();
-  const currentUserID = currentUser?.memberID;
+  const [searchParams, setSearchParams] = useState<GroupSearchParams>({
+    title: "",
+    tags: [],
+    date: "",
+    includeClosed: false,
+  });
+
+  const debouncedTitle = useDebounce(searchParams.title ?? "", 500);
 
   const fetchGroups = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const res = await getGroups();
-      // console.log("groups",res)
-      setGroups(res.data);
+      const { data } = await getGroups(searchParams);
+      setGroups(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch groups");
-      console.log(err);
+      setError(err.message || "Failed to fetch groups");
     } finally {
       setLoading(false);
     }
@@ -49,12 +63,14 @@ export function CollabGroupCards() {
 
   useEffect(() => {
     fetchGroups();
-  }, []);
+  }, [
+    debouncedTitle,
+    searchParams.tags,
+    searchParams.date,
+    searchParams.includeClosed,
+  ]);
 
-  const handleCreateGroup = () => {
-    /* TODO: plug backend */
-    router.push("/collab-group/create");
-  };
+  const handleCreateGroup = () => router.push("/collab-group/create");
 
   const handleJoinGroup = async (e: React.MouseEvent, groupID: string) => {
     e.preventDefault(); // Prevent navigation when clicking join button
@@ -82,17 +98,18 @@ export function CollabGroupCards() {
 
   const isJoined = (groupID: string) => {
     const group = groups.find((g) => g.groupID === groupID);
-    if (!group) return false;
-    return group.members.includes(currentUserID);
+    return group?.members.includes(currentUserID ?? "") ?? false;
   };
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
+  const availableTags = Array.from(new Set(groups.flatMap((g) => g.tags)));
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Collab Group
@@ -101,19 +118,40 @@ export function CollabGroupCards() {
             Join collaboration groups and work together on exciting projects
           </p>
         </div>
-        <Button
-          onClick={handleCreateGroup}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          Create Group
-        </Button>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+          <Input
+            type="text"
+            placeholder="Search by title..."
+            value={searchParams.title}
+            onChange={(e) =>
+              setSearchParams((prev) => ({ ...prev, title: e.target.value }))
+            }
+            className="pl-3 w-full sm:w-64"
+          />
+          <Button
+            onClick={handleCreateGroup}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
+          >
+            Create Group
+          </Button>
+        </div>
       </div>
 
-      {/* Group Cards Grid */}
+      {/* Filters */}
+      <GroupSearchFilters
+        searchParams={searchParams}
+        setSearchParams={setSearchParams}
+        availableTags={availableTags}
+      />
+
+      {/* Group Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {!groups || groups.length === 0 ? (
+        {!groups.length ? (
           <div className="text-muted-foreground py-10">
-            No collaboration groups
+            {debouncedTitle
+              ? `No groups found for "${debouncedTitle}"`
+              : "No collaboration groups"}
           </div>
         ) : (
           groups.map((group) => (
@@ -139,9 +177,7 @@ export function CollabGroupCards() {
                     {group.tags.map((tag) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
                         <div
-                          className={`h-2 w-2 rounded-full ${getTagColor(
-                            tag
-                          )} mr-1.5`}
+                          className={`h-2 w-2 rounded-full ${getTagColor(tag)} mr-1.5`}
                         />
                         {getTagName(tag)}
                       </Badge>
@@ -151,6 +187,7 @@ export function CollabGroupCards() {
 
                 <CardContent className="flex-1 space-y-4">
                   <div className="text-sm text-muted-foreground">
+                    <UsersIcon className="h-4 w-4 inline mr-1.5" />
                     {group.members.length} Members
                   </div>
 
