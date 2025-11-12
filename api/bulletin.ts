@@ -41,7 +41,7 @@ export const getBulletinsByGroup = async (groupId: string) => {
 export const createBulletin = async (
   payload: BulletinCreateRequest,
   imageFile?: File,
-  memberID?: string
+  memberID?: string,
 ) => {
   if (imageFile) {
     const formData = new FormData();
@@ -68,7 +68,7 @@ export const updateBulletin = async (
   id: string,
   payload: BulletinUpdateRequest,
   imageFile?: File,
-  memberID?: string
+  memberID?: string,
 ) => {
   if (imageFile) {
     const formData = new FormData();
