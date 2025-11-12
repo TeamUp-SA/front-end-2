@@ -89,7 +89,7 @@ export const getGroups = async (
   const SEARCH_GROUPS_QUERY = `
     query SearchGroups(
       $title: String
-      $tags: [GroupTag!]
+      $tags: [GroupTag]
       $date: String
       $includeClosed: Boolean
       $limit: Int

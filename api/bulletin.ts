@@ -5,7 +5,7 @@ const multipartHeaders = { "Content-Type": "multipart/form-data" };
 
 // GET /bulletin/
 export const getBulletins = async () => {
-  const res = await axios.get("/bulletin/");
+  const res = await axios.get("/bulletin");
   return res.data;
 };
 
